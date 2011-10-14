@@ -6,6 +6,8 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-    cout << "Hello, world!" << endl;
-    return 0;
+    SgProject* proj = frontend(argc, argv);
+
+
+    return backend(proj);
 }
