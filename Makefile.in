@@ -15,6 +15,7 @@
 
 @SET_MAKE@
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -36,8 +37,8 @@ bin_PROGRAMS = upctr$(EXEEXT)
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
-	$(top_srcdir)/configure AUTHORS COPYING ChangeLog INSTALL NEWS \
-	config/install-sh config/missing
+	$(top_srcdir)/configure $(upctr_HEADERS) AUTHORS COPYING \
+	ChangeLog INSTALL NEWS config/install-sh config/missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -48,9 +49,9 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)"
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(upctrdir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_upctr_OBJECTS = upctr-upctr.$(OBJEXT)
+am_upctr_OBJECTS = upctr-upctr.$(OBJEXT) upctr-UpcLibrary.$(OBJEXT)
 upctr_OBJECTS = $(am_upctr_OBJECTS)
 upctr_LDADD = $(LDADD)
 upctr_LINK = $(CXXLD) $(upctr_CXXFLAGS) $(CXXFLAGS) $(upctr_LDFLAGS) \
@@ -65,6 +66,28 @@ CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
 SOURCES = $(upctr_SOURCES)
 DIST_SOURCES = $(upctr_SOURCES)
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
+am__install_max = 40
+am__nobase_strip_setup = \
+  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
+am__nobase_strip = \
+  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
+am__nobase_list = $(am__nobase_strip_setup); \
+  for p in $$list; do echo "$$p $$p"; done | \
+  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
+  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
+    if (++n[$$2] == $(am__install_max)) \
+      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
+    END { for (dir in files) print dir, files[dir] }'
+am__base_list = \
+  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
+  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
+HEADERS = $(upctr_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -164,8 +187,10 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
-upctr_SOURCES = upctr.C
-upctr_LDFLAGS = $(ROSE_LDFLAGS)
+upctrdir = $(src_dir)
+upctr_SOURCES = upctr.C UpcLibrary.C
+upctr_HEADERS = UpcLibrary.h
+upctr_LDFLAGS = $(ROSE_LDFLAGS) 
 upctr_CXXFLAGS = $(ROSE_CXXFLAGS)
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -281,6 +306,32 @@ upctr-upctr.o: upctr.C
 
 upctr-upctr.obj: upctr.C
 	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(upctr_CXXFLAGS) $(CXXFLAGS) -c -o upctr-upctr.obj `if test -f 'upctr.C'; then $(CYGPATH_W) 'upctr.C'; else $(CYGPATH_W) '$(srcdir)/upctr.C'; fi`
+
+upctr-UpcLibrary.o: UpcLibrary.C
+	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(upctr_CXXFLAGS) $(CXXFLAGS) -c -o upctr-UpcLibrary.o `test -f 'UpcLibrary.C' || echo '$(srcdir)/'`UpcLibrary.C
+
+upctr-UpcLibrary.obj: UpcLibrary.C
+	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(upctr_CXXFLAGS) $(CXXFLAGS) -c -o upctr-UpcLibrary.obj `if test -f 'UpcLibrary.C'; then $(CYGPATH_W) 'UpcLibrary.C'; else $(CYGPATH_W) '$(srcdir)/UpcLibrary.C'; fi`
+install-upctrHEADERS: $(upctr_HEADERS)
+	@$(NORMAL_INSTALL)
+	test -z "$(upctrdir)" || $(MKDIR_P) "$(DESTDIR)$(upctrdir)"
+	@list='$(upctr_HEADERS)'; test -n "$(upctrdir)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(upctrdir)'"; \
+	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(upctrdir)" || exit $$?; \
+	done
+
+uninstall-upctrHEADERS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(upctr_HEADERS)'; test -n "$(upctrdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	test -n "$$files" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(upctrdir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(upctrdir)" && rm -f $$files
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -483,9 +534,9 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) config.h
+all-am: Makefile $(PROGRAMS) $(HEADERS) config.h
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(upctrdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -535,7 +586,7 @@ info: info-am
 
 info-am:
 
-install-data-am:
+install-data-am: install-upctrHEADERS
 
 install-dvi: install-dvi-am
 
@@ -581,7 +632,7 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS
+uninstall-am: uninstall-binPROGRAMS uninstall-upctrHEADERS
 
 .MAKE: all install-am install-strip
 
@@ -595,11 +646,11 @@ uninstall-am: uninstall-binPROGRAMS
 	install-data-am install-dvi install-dvi-am install-exec \
 	install-exec-am install-html install-html-am install-info \
 	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
+	install-ps install-ps-am install-strip install-upctrHEADERS \
+	installcheck installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-binPROGRAMS
+	uninstall-am uninstall-binPROGRAMS uninstall-upctrHEADERS
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

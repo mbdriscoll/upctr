@@ -7,6 +7,8 @@
 #include "rose.h"
 #include "sageInterface.h"
 
+#include "UpcLibrary.h"
+
 using namespace std;
 
 /**
@@ -30,11 +32,7 @@ SgExpression* buildHasAffinityExp_Int(SgExpression* int_exp, SgScopeStatement* s
  */
 SgExpression* buildHasAffinityExp_Ptr(SgExpression* elem_exp, SgScopeStatement* scope) {
     SgUpcMythread* mythread = SageBuilder::buildUpcMythread();
-    SgExprListExp* params = SageBuilder::buildExprListExp(elem_exp);
-    SgType* return_type = SageBuilder::buildIntType();
-    SgName name("upc_threadof");
-    SgExpression* elem_affinity =
-        SageBuilder::buildFunctionCallExp(name, return_type, params, scope);
+    SgExpression* elem_affinity = UpcLibrary::buildThreadOfCall(elem_exp, scope);
     return SageBuilder::buildEqualityOp(mythread, elem_affinity);
 }
 
@@ -86,7 +84,7 @@ int main(int argc, char* argv[])
     }
 
     /* output the number of stmts found */
-    cout << "found " << for_stmts.size() << " upc_forall stmts" << endl;
+    cout << "Processed " << for_stmts.size() << " upc_forall stmts" << endl;
 
     /* unparse the transformed AST */
     proj->unparse();
