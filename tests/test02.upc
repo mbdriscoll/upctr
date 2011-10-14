@@ -7,7 +7,7 @@ shared int A[U-L];
 
 int main() {
     int t = 0;
-    upc_forall(int i = L; i < U; i++; i) {
+    upc_forall(int i = L; i < U; i++; &A[i]) {
         t += A[i];
     }
 
