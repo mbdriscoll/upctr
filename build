@@ -1,5 +1,7 @@
 #/bin/bash
 
+# use this script to update ./configure and other generate files as needed
+
 set -ex
 
 aclocal
