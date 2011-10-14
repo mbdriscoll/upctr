@@ -1,0 +1,6 @@
+ACLOCAL_AMFLAGS = -I m4
+bin_PROGRAMS = upctr
+
+upctr_SOURCES = upctr.C
+upctr_LDFLAGS = $(ROSE_LDFLAGS)
+upctr_CXXFLAGS = $(ROSE_CXXFLAGS)

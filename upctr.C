@@ -1,11 +1,11 @@
-/* upctr.c: A standard "Hello, world!" program */
- 
 #include <iostream>
- 
+
+#include "rose.h"
+
 using namespace std;
 
 int main(int argc, char* argv[])
 {
-    cout << "Hello, world!\n" << endl;
+    cout << "Hello, world!" << endl;
     return 0;
 }

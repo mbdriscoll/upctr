@@ -1,0 +1,8 @@
+#/bin/bash
+
+set -ex
+
+aclocal
+autoheader
+autoconf
+automake -a -c -i
