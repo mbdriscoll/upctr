@@ -1,0 +1,6 @@
+all: upctr 
+
+.PHONY: clean
+
+clean:
+	rm -f upctr *.o

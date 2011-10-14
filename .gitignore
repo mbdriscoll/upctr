@@ -1,0 +1,6 @@
+*.o
+upctr
+Makefile
+configure
+config.log
+autom4te.cache
