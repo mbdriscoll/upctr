@@ -1,5 +1,5 @@
 AC_INIT([upctr], [0.9], [mbdriscoll@cs.berkeley.edu])
-AC_PREREQ([2.68])
+AC_PREREQ([2.65])
 
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([m4])
