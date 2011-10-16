@@ -12,4 +12,4 @@ SgExpression* buildThreadOfCall(
 
 } /* end namespace UpcLibrary */
 
-#endif _UPC_LIBRARY_H_
+#endif /* _UPC_LIBRARY_H_ */
