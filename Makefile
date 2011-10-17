@@ -7,5 +7,8 @@ all: upctr
 
 upctr: upctr.o UpcLibrary.o
 
+check: upctr
+	./upctr tests/test01.upc -rose:upc_threads 4 -rose:skipFinalCompileStep
+	
 clean:
 	rm -rf *.o upctr

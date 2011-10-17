@@ -9,4 +9,6 @@ Penporn Koanantakool    penpornk at cs.berkeley.edu
 
 --------------------------------
 
-Installation: see INSTALL.txt
+Installation:
+   $ make
+   $ make check
