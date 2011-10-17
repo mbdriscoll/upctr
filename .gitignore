@@ -1,14 +1,4 @@
 *.o
 upctr
-Makefile
-configure
-config.log
-autom4te.cache
-.deps
-aclocal.m4
-config.h
-config.h.in
-config.status
-stamp-h1
 .*.swp
 rose_*
