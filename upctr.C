@@ -57,9 +57,15 @@ SgForStatement* translate(SgUpcForAllStatement* upc_stmt) {
     SgExpression* old_test = old_test_stmt->get_expression();
     ROSE_ASSERT(old_test);
 
-    SgExpression* has_affinity = buildHasAffinityExp(upc_stmt->get_affinity(), scope);
-    SgExpression* new_test = SageBuilder::buildAndOp(old_test, has_affinity);
-    SgStatement* new_test_stmt = SageBuilder::buildExprStatement(new_test);
+    SgStatement* new_test_stmt;
+    if (isSgNullExpression( upc_stmt->get_affinity() )) {
+        new_test_stmt = old_test_stmt;
+    } else {
+        SgExpression* has_affinity = buildHasAffinityExp(upc_stmt->get_affinity(), scope);
+        SgExpression* new_test = SageBuilder::buildAndOp(old_test, has_affinity);
+        new_test_stmt = SageBuilder::buildExprStatement(new_test);
+    }
+
     SgForStatement* for_stmt = SageBuilder::buildForStatement(
             upc_stmt->get_for_init_stmt(), /* initialize stmt */
             new_test_stmt,                 /* test exp */
