@@ -4,6 +4,10 @@
 #include "rose.h"
 #include "sageInterface.h"
 
+//STLs
+#include <vector>
+#include <string>
+
 //Array Annotation headers
 #include <CPPAstInterface.h>
 #include <ArrayAnnot.h>
@@ -18,6 +22,9 @@
 
 namespace UpcLibrary {
 
+	extern bool debug;
+	extern bool phase2_only;
+
 	SgExpression* buildThreadOfCall(
 			SgExpression* exp,
 			SgScopeStatement* scope);
@@ -30,8 +37,8 @@ namespace UpcLibrary {
 			ArrayInterface* array_interface,
 			ArrayAnnotation* annot);
 
-//	LoopTreeDepGraph* ComputeDependenceGraph(
-//			SgNode* loop);
+	void processOptions(
+			std::vector<std::string> &argvList);
 
 } /* end namespace UpcLibrary */
 

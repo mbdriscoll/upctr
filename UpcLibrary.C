@@ -3,6 +3,9 @@
 
 using namespace std;
 
+bool UpcLibrary::debug = true;
+bool UpcLibrary::phase2_only = false;
+
 SgExpression*
 UpcLibrary::buildThreadOfCall(
         SgExpression* exp,
@@ -16,6 +19,7 @@ UpcLibrary::buildThreadOfCall(
     return threadof;
 }
 
+// From AutoParallelization project
 // Return the loop invariant of a canonical loop
 // Return NULL if the loop is not canonical
 SgInitializedName*
@@ -36,7 +40,8 @@ UpcLibrary::getLoopInvariant(SgNode* loop)
 	return invarname;
 }
 
-//Compute dependence graph for a loop, using ArrayInterface and ArrayAnnotation
+// From AutoParallelization project
+// Compute dependence graph for a loop, using ArrayInterface and ArrayAnnotation
 // TODO generate dep graph for the entire function and reuse it for all loops
 LoopTreeDepGraph*
 UpcLibrary::ComputeDependenceGraph(SgNode* loop, ArrayInterface* array_interface, ArrayAnnotation* annot)
@@ -63,6 +68,7 @@ UpcLibrary::ComputeDependenceGraph(SgNode* loop, ArrayInterface* array_interface
 		cout<<"Debug: Dump the dependence graph for the loop in question:"<<endl;
 		comp->DumpDep();
 	}
+	return comp->GetDepGraph();
 
 //	// The following code was used when an entire function body with several loops
 //	// is analyzed for dependence analysis. I keep it to double check the computation.
@@ -84,12 +90,12 @@ UpcLibrary::ComputeDependenceGraph(SgNode* loop, ArrayInterface* array_interface
 //		//loop_nodes.Advance();
 //		//loop_nodes.Current()->Dump();
 //		ast_ptr = dynamic_cast<LoopTreeLoopNode*>(cur_loop)->GetOrigLoop();
-//		// cout<<AstToString(ast_ptr)<<endl;
+//		//cout<<AstToString(ast_ptr)<<endl;
 //		ROSE_ASSERT(ast_ptr!=NULL);
 //		SgNode* sg_node = AstNodePtr2Sage(ast_ptr);
 //		ROSE_ASSERT(sg_node == loop);
-//		// cout<<"-------------Dump the loops in question------------"<<endl;
-//		//   cout<<sg_node->class_name()<<endl;
+//		//cout<<"-------------Dump the loops in question------------"<<endl;
+//		//cout<<sg_node->class_name()<<endl;
 //		return comp->GetDepGraph();
 //	}
 //	else
@@ -98,6 +104,44 @@ UpcLibrary::ComputeDependenceGraph(SgNode* loop, ArrayInterface* array_interface
 //		return NULL;
 //		// Not all loop can be collected by LoopTreeTraverseSelectLoop right now
 //		// e.g: loops in template function bodies
-//		//ROSE_ASSERT(false);
 //	}
+}
+
+// Modified from AutoParallelization project
+void
+UpcLibrary::processOptions(vector<string> &argvList){
+	if(CommandlineProcessing::isOption(argvList, "", "-debug", true)){
+		cout << "Enabling debugging..." << endl;
+		debug = true;
+	}
+	if(CommandlineProcessing::isOption(argvList, "", "-phase2", true)){
+		cout << "Skipping Phase I..." << endl;
+		phase2_only = true;
+	}
+
+	//Save -debugdep, -annot file .. etc,
+	// used internally in ReadAnnotation and Loop transformation
+	CmdOptions::GetInstance()->SetOptions(argvList);
+	bool dumpAnnot = CommandlineProcessing::isOption(argvList,"","-dumpannot",true);
+
+	//Read in annotation files after -annot
+	ArrayAnnotation* annot = ArrayAnnotation::get_inst();
+	annot->register_annot();
+	ReadAnnotation::get_inst()->read();
+	if (dumpAnnot)
+		annot->Dump();
+	//Strip off custom options and their values to enable backend compiler
+	CommandlineProcessing::removeArgsWithParameters(argvList,"-annot");
+
+	// keep --help option after processing, let other modules respond also
+	if ((CommandlineProcessing::isOption (argvList,"--help","",false)) ||
+		(CommandlineProcessing::isOption (argvList,"-help","",false)))
+	{
+		cout << "upctr-specific options" << endl;
+		cout << "\t-debug          		print debug info" << endl;
+		cout << "\t-phase2         		run only phase II (dependence analysis)" << endl;
+		cout << "\t-annot filename      specify annotation file for semantics of abstractions" << endl;
+		cout << "\t-dumpannot           dump annotation file content" << endl;
+		cout << "---------------------------------------------------------------" << endl;
+	}
 }

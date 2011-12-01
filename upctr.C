@@ -18,6 +18,7 @@ using namespace std;
  *
  * TODO: check type of elem_exp (int) to sanitize
  */
+
 SgExpression* buildHasAffinityExp_Int(SgExpression* int_exp, SgScopeStatement* scope) {
     SgUpcMythread* mythread = SageBuilder::buildUpcMythread();
     SgModOp* mod_exp = SageBuilder::buildModOp(int_exp, mythread);
@@ -78,49 +79,58 @@ SgForStatement* translate(SgUpcForAllStatement* upc_stmt) {
 
 int main(int argc, char* argv[])
 {
-    /* parse the input file */
-    SgProject* proj = frontend(argc, argv);
-	cout << "--- Phase I ---" << endl;
-    /* collect all upc_forall stmts */
-    vector<SgUpcForAllStatement*> for_stmts =
-        SageInterface::querySubTree<SgUpcForAllStatement>(proj);
+	char **names;
+	vector<string> argvList(argv, argv+argc);
+	UpcLibrary::processOptions(argvList);
 
-    /* translate upc_forall stmts to normal c */
-    foreach (SgUpcForAllStatement* upc_stmt, for_stmts) {
-        SageInterface::replaceStatement(upc_stmt, translate(upc_stmt));
-    }
+	if(!UpcLibrary::phase2_only){
+		/* parse the input file */
+		SgProject* proj = frontend(argc, argv);
+		cout << "--- Phase I ---" << endl;
+		/* collect all upc_forall stmts */
+		vector<SgUpcForAllStatement*> for_stmts =
+			SageInterface::querySubTree<SgUpcForAllStatement>(proj);
 
-    /* output the number of stmts found */
-    cout << "Processed " << for_stmts.size() << " upc_forall stmts" << endl;
-
-	/* unparse the transformed AST */
-    proj->unparse();
-
-	/* Read the converted upc_forloop files */
-	cout << "--- Phase II ---" << endl;
-	cout << "Re-creating SgProject using these parameters: ";
-	int i;
-	char *ptr;
-	char **names = new (char (*[argc]));
-    for(i=0;i<argc;i++){
-    	names[i] = new char[100];
-		// If file name ends with ".upc", append "rose_"
-		if(strcmp(argv[i]+strlen(argv[i])-4, ".upc") == 0){
-			// Remove leading directory path -- need file name only.
-			for(ptr = argv[i]+strlen(argv[i])-1; ptr>argv[i] && *ptr != '/'; ptr--);
-			if(*ptr == '/') ptr++;
-			strcpy(names[i], "rose_");
-			strcat(names[i], ptr);
-		}
-		else {
-			// Copy other parameters as normal
-			strcpy(names[i], argv[i]);
+		/* translate upc_forall stmts to normal c */
+		foreach (SgUpcForAllStatement* upc_stmt, for_stmts) {
+			SageInterface::replaceStatement(upc_stmt, translate(upc_stmt));
 		}
 
-		cout << names[i] << " ";
-    }
-    cout << endl;
-    SgProject* c_proj = frontend(argc, names);
+		/* output the number of stmts found */
+		cout << "Processed " << for_stmts.size() << " upc_forall stmts" << endl;
+
+		/* unparse the transformed AST */
+		proj->unparse();
+
+		/* Prepare parameters for Phase II */
+		cout << "Re-creating parameters for new SgProject: ";
+		int i;
+		char *ptr;
+		names = new (char (*[argc]));
+		for(i=0;i<argc;i++){
+			names[i] = new char[100];
+			// If file name ends with ".upc", append "rose_"
+			if(strcmp(argv[i]+strlen(argv[i])-4, ".upc") == 0){
+				// Remove leading directory path -- need file name only.
+				for(ptr = argv[i]+strlen(argv[i])-1; ptr>argv[i] && *ptr != '/'; ptr--);
+				if(*ptr == '/') ptr++;
+				strcpy(names[i], "rose_");
+				strcat(names[i], ptr);
+			}
+			else {
+				// Copy other parameters as normal
+				strcpy(names[i], argv[i]);
+			}
+
+			cout << names[i] << " ";
+		}
+		cout << endl;
+	}
+	else
+		names = argv;
+
+    cout << "--- Phase II ---" << endl;
+	SgProject* c_proj = frontend(argc, names);
 
 	/* Normalize C99-style for (int i=x, ...) to C89-style: int i; for(i=x, ...) */
 	VariantVector vv(V_SgForStatement);
@@ -183,8 +193,9 @@ int main(int argc, char* argv[])
 				// getLoopInvariant() will actually check if the loop has canonical forms
 				// which can be handled by dependence analysis
 				SgInitializedName *invarname = UpcLibrary::getLoopInvariant(current_loop);
+				LoopTreeDepGraph *depgraph;
 				if(true/*invarname != NULL*/){
-					UpcLibrary::ComputeDependenceGraph(current_loop, &array_interface, annot);
+					depgraph = UpcLibrary::ComputeDependenceGraph(current_loop, &array_interface, annot);
 				}
 				else { // Cannot grab loop index from a non-conforming looo, skip Dependence Analysis
 					cout << "Skipping a non-canonical loop at line:"
