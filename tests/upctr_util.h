@@ -5,8 +5,9 @@
 #include <string.h>
 #include <assert.h>
 #include <time.h>
+#include <limits.h>
 
-typedef enum upctr_init {
+typedef enum _upctr_init_t {
     UPCTR_INIT_RAND,
     UPCTR_INIT_ZERO,
     UPCTR_INIT_ONE,
@@ -16,39 +17,40 @@ typedef enum upctr_init {
 } upctr_init_t;
 
 double rand_double() {
-    return (double) rand();
+    return (double) rand() / (double) INT_MAX;
 }
 
-shared double* upctr_init_mat(int dx, int dy, upctr_init_t init_t) {
-    shared double* M = (shared double*) upc_all_alloc(dx*dy, sizeof(double));
+shared [N] double * upctr_init_mat(upctr_init_t init_t) {
+    shared [N] double * M = (shared [N] double *) upc_all_alloc(N*N, sizeof(double));
 
     int i, j;
-    for (i = 0; i < dx; i++) {
-        upc_forall (j = 0; j < dy; j++; &M[i*dx+j]) {
+    for (i = 0; i < N; i++) {
+        upc_forall (j = 0; j < N; j++; &M[i*N+j]) {
             switch(init_t) {
-                case UPCTR_INIT_RAND:  M[i*dx+j] = rand_double();     break;
-                case UPCTR_INIT_ZERO:  M[i*dx+j] = 0.0;               break;
-                case UPCTR_INIT_ONE:   M[i*dx+j] = 1.0;               break;
-                case UPCTR_INIT_IDENT: M[i*dx+j] = (i==j) ? 1.0: 0.0; break;
-                case UPCTR_INIT_INDEX: M[i*dx+j] = i*dx+j;            break;
+                case UPCTR_INIT_RAND:  M[i*N+j] = rand_double();     break;
+                case UPCTR_INIT_ZERO:  M[i*N+j] = 0.0;               break;
+                case UPCTR_INIT_ONE:   M[i*N+j] = 1.0;               break;
+                case UPCTR_INIT_IDENT: M[i*N+j] = (i==j) ? 1.0: 0.0; break;
+                case UPCTR_INIT_INDEX: M[i*N+j] = i*N+j;            break;
                 case UPCTR_INIT_NONE:                                 break;
                 default: assert(!"Unreachable");
             }
         }
     }
+    upc_barrier;
 
     return M;
 }
 
-void upctr_print_mat(char* name, shared double* M, int dx, int dy) {
+void upctr_print_mat(char* name, shared [N] double * M) {
     printf("%s:\n", name);
 
     int i, j;
-    for (i = 0; i < dx; i++) {
-        for (j = 0; j < dy; j++) {
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
             if (j != 0)
                 printf(", ");
-            printf("%2.0f", M[i*dx+j]);
+            printf("%2.0f", M[i*N+j]);
         }
         printf("\n");
     }
