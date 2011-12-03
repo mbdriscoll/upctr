@@ -79,72 +79,32 @@ SgForStatement* translate(SgUpcForAllStatement* upc_stmt) {
 
 int main(int argc, char* argv[])
 {
-	char **names;
 	vector<string> argvList(argv, argv+argc);
 	UpcLibrary::processOptions(argvList);
 
-	if(!UpcLibrary::phase2_only){
-		/* parse the input file */
-		SgProject* proj = frontend(argc, argv);
-		cout << "--- Phase I ---" << endl;
-		/* collect all upc_forall stmts */
-		vector<SgUpcForAllStatement*> for_stmts =
-			SageInterface::querySubTree<SgUpcForAllStatement>(proj);
+    SgProject* proj = frontend(argc, argv);
 
-		/* translate upc_forall stmts to normal c */
-		foreach (SgUpcForAllStatement* upc_stmt, for_stmts) {
-			SageInterface::replaceStatement(upc_stmt, translate(upc_stmt));
-		}
+    /* collect all upc_forall stmts */
+    vector<SgUpcForAllStatement*> forall_stmts =
+        SageInterface::querySubTree<SgUpcForAllStatement>(proj);
 
-		/* output the number of stmts found */
-		cout << "Processed " << for_stmts.size() << " upc_forall stmts" << endl;
+    /* translate upc_forall stmts to normal c */
+    foreach (SgUpcForAllStatement* forall_stmt, forall_stmts)
+        SageInterface::replaceStatement(forall_stmt, translate(forall_stmt));
 
-		/* unparse the transformed AST */
-		proj->unparse();
+    /* output the number of stmts found */
+    cout << "Processed " << forall_stmts.size() << " upc_forall stmts" << endl;
 
-		/* Prepare parameters for Phase II */
-		cout << "Re-creating parameters for new SgProject: ";
-		int i;
-		char *ptr;
-		names = new (char (*[argc]));
-		for(i=0;i<argc;i++){
-			names[i] = new char[100];
-			// If file name ends with ".upc", append "rose_"
-			if(strcmp(argv[i]+strlen(argv[i])-4, ".upc") == 0){
-				// Remove leading directory path -- need file name only.
-				for(ptr = argv[i]+strlen(argv[i])-1; ptr>argv[i] && *ptr != '/'; ptr--);
-				if(*ptr == '/') ptr++;
-				strcpy(names[i], "rose_");
-				strcat(names[i], ptr);
-			}
-			else {
-				// Copy other parameters as normal
-				strcpy(names[i], argv[i]);
-			}
-
-			cout << names[i] << " ";
-		}
-		cout << endl;
-	}
-	else
-		names = argv;
-
-    cout << "--- Phase II ---" << endl;
-	SgProject* c_proj = frontend(argc, names);
+    /* collect all for_stmts */
+    vector<SgForStatement*> for_stmts =
+        SageInterface::querySubTree<SgForStatement>(proj);
 
 	/* Normalize C99-style for (int i=x, ...) to C89-style: int i; for(i=x, ...) */
-	VariantVector vv(V_SgForStatement);
-	Rose_STL_Container<SgNode*> loops = NodeQuery::queryMemoryPool(vv);
-	for(Rose_STL_Container<SgNode*>::iterator iter = loops.begin();
-		iter != loops.end(); iter++)
-	{
-		SgForStatement *cur_loop = isSgForStatement(*iter);
-		ROSE_ASSERT(cur_loop);
-		SageInterface::normalizeForLoopInitDeclaration(cur_loop);
-	}
+    foreach (SgForStatement* for_stmt, for_stmts)
+		SageInterface::normalizeForLoopInitDeclaration(for_stmt);
 
 	/* Compute Dependence Graph */
-	SgFilePtrList &ptr_list = c_proj->get_fileList();
+	SgFilePtrList &ptr_list = proj->get_fileList();
 	cout << "Number of files in project: " << ptr_list.size() << endl;
 	for(SgFilePtrList::iterator iter = ptr_list.begin(); iter != ptr_list.end(); iter++) {
 		SgFile *sageFile = (*iter);
@@ -206,6 +166,5 @@ int main(int argc, char* argv[])
 		}
 	}
 
-//    c_proj->unparse();
     return 0;
 }
