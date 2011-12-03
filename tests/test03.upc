@@ -61,16 +61,6 @@ void dgemm(shared [N] double * C,
         }
     }
 }
-
-#define START_TIMER bupc_tick_t start; \
-    if (MYTHREAD == 0) start = bupc_ticks_now();
-
-#define END_TIMER \
-    if (MYTHREAD == 0) { \
-        bupc_tick_t end = bupc_ticks_now(); \
-        int ticks = (int) bupc_ticks_to_us(end-start); \
-        printf("Time: %d milliseconds\n", ticks/1000); \
-    }
     
 /*
  * Main. Initializes matrices and runs dgemm.
