@@ -29,13 +29,8 @@ namespace UpcLibrary {
 			SgExpression* exp,
 			SgScopeStatement* scope);
 
-	SgInitializedName* getLoopInvariant(
-			SgNode* loop);
-
 	LoopTreeDepGraph* ComputeDependenceGraph(
-			SgNode* loop,
-			ArrayInterface* array_interface,
-			ArrayAnnotation* annot);
+			SgNode* loop);
 
 	void processOptions(
 			std::vector<std::string> &argvList);

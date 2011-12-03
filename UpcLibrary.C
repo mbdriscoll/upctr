@@ -20,34 +20,31 @@ UpcLibrary::buildThreadOfCall(
 }
 
 // From AutoParallelization project
-// Return the loop invariant of a canonical loop
-// Return NULL if the loop is not canonical
-SgInitializedName*
-UpcLibrary::getLoopInvariant(SgNode* loop)
-{
-	AstInterfaceImpl faImpl(loop);
-	AstInterface fa(&faImpl);
-	AstNodePtr ivar2 ;
-	AstNodePtrImpl loop2(loop);
-	bool result=fa.IsFortranLoop(loop2, &ivar2);
-	if (!result)
-	  return NULL;
-	SgVarRefExp* invar = isSgVarRefExp(AstNodePtrImpl(ivar2).get_ptr());
-	ROSE_ASSERT(invar);
-	SgInitializedName* invarname = invar->get_symbol()->get_declaration();
-	// cout<<"debug ivar:"<<invarname<< " name "
-	// <<invarname->get_name().getString()<<endl;
-	return invarname;
-}
-
-// From AutoParallelization project
 // Compute dependence graph for a loop, using ArrayInterface and ArrayAnnotation
 // TODO generate dep graph for the entire function and reuse it for all loops
 LoopTreeDepGraph*
-UpcLibrary::ComputeDependenceGraph(SgNode* loop, ArrayInterface* array_interface, ArrayAnnotation* annot)
+UpcLibrary::ComputeDependenceGraph(SgNode* loop)
 {
-	bool enable_debug = true;
-	ROSE_ASSERT(loop && array_interface&& annot);
+    // Replace operators with their equivalent counterparts defined
+    // in "inline" annotations
+    AstInterfaceImpl faImpl_1(loop);
+    CPPAstInterface fa_body(&faImpl_1);
+    OperatorInlineRewrite()(fa_body, AstNodePtrImpl(loop));
+
+    // Pass annotations to arrayInterface and use them to collect
+    // alias info. function info etc.
+    SgFunctionDefinition* defn = SageInterface::getEnclosingProcedure(loop);
+    ArrayAnnotation *annot = ArrayAnnotation::get_inst();
+    ArrayInterface array_interface(*annot);
+    array_interface.initialize(fa_body, AstNodePtrImpl(defn));
+    array_interface.observe(fa_body);
+
+    //FR(06/07/2011): aliasinfo was not set which caused segfault
+    LoopTransformInterface::set_aliasInfo(&array_interface);
+
+    // X. Loop normalization for all loops within body
+    NormalizeForLoop(fa_body, AstNodePtrImpl(loop));
+
 	//TODO check if its a canonical loop
 
 	// Prepare AstInterface: implementation and head pointer
@@ -58,12 +55,12 @@ UpcLibrary::ComputeDependenceGraph(SgNode* loop, ArrayInterface* array_interface
 	fa.SetRoot(head);
 
 	LoopTransformInterface::set_astInterface(fa);
-	LoopTransformInterface::set_arrayInfo(array_interface);
-	LoopTransformInterface::set_aliasInfo(array_interface);
+	LoopTransformInterface::set_arrayInfo(&array_interface);
+	LoopTransformInterface::set_aliasInfo(&array_interface);
 	LoopTransformInterface::set_sideEffectInfo(annot);
 	LoopTreeDepCompCreate* comp = new LoopTreeDepCompCreate(head);// TODO when to release this?
 	// Retrieve dependence graph here!
-	if (enable_debug)
+	if (true)
 	{
 		cout<<"Debug: Dump the dependence graph for the loop in question:"<<endl;
 		comp->DumpDep();
