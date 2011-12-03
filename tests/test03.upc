@@ -12,7 +12,7 @@
  */
 
 /* (N x N) * (N x N) -> (N x N) */
-#define N 4
+#define N 1000
 
 #include <upctr_util.h>
 
@@ -23,45 +23,72 @@
  */
 void dgemm(shared [N] double * C,
            shared [N] double * A,
-           shared [N] double * B) {
+           shared [1] double * B) {
     int i, j, k;
+
     for (i = 0; i < N; i++) {
-        for (j = 0; j < N; j++) {
+        upc_forall (j = 0; j < N; j++; &C[i*N+j]) {
 
+#ifdef UPCTR_OPT
+            /* memget A */
             double A_local[N];
-
             size_t dststrides[] = {sizeof(double)};
-            size_t srcstrides[] = {N*sizeof(double)};
-
-            size_t count[] = {N*sizeof(double)};
-            size_t stridelevels = 0;
-
+            size_t srcstrides[] = {sizeof(double)};
+            size_t count[] = {sizeof(double), N};
+            size_t stridelevels = 1;
             bupc_memget_strided(A_local, dststrides,
                                 &A[i*N], srcstrides,
                                 count, stridelevels);
 
-            upc_forall (k = 0; k < N; k++; &C[i*N+j]) {
-                C[i*N+j] = C[i*N+j] + A_local[k] * B[k*N+j];
+            /* memget B */
+            double B_local[N];
+            size_t dststridesB[] = {sizeof(double)};
+            size_t srcstridesB[] = {sizeof(double)};
+            size_t countB[] = {sizeof(double), N};
+            size_t stridelevelsB = 1;
+            bupc_memget_strided(B_local, dststridesB,
+                                &B[j], srcstridesB,
+                                countB, stridelevelsB);
+#endif
+
+            for (k = 0; k < N; k++) {
+#ifdef UPCTR_OPT
+                C[i*N+j] = C[i*N+j] + A_local[k]* B_local[k];
+#else
+                C[i*N+j] = C[i*N+j] + A[i*N+k] + B[k*N+j];
+#endif
             }
         }
     }
 }
 
+#define START_TIMER bupc_tick_t start; \
+    if (MYTHREAD == 0) start = bupc_ticks_now();
+
+#define END_TIMER \
+    if (MYTHREAD == 0) { \
+        bupc_tick_t end = bupc_ticks_now(); \
+        int ticks = (int) bupc_ticks_to_us(end-start); \
+        printf("Time: %d milliseconds\n", ticks/1000); \
+    }
+    
 /*
  * Main. Initializes matrices and runs dgemm.
  */
 int main(int argc, char* argv[]) {
-    shared [N] double * A = upctr_init_mat(UPCTR_INIT_INDEX);
-    shared [N] double * B = upctr_init_mat(UPCTR_INIT_IDENT);
-    shared [N] double * C = upctr_init_mat(UPCTR_INIT_ZERO);
+    shared [N] double * A = (shared [N] double *) upc_all_alloc(N*N, sizeof(double));
+    shared [1] double * B = (shared [1] double *) upc_all_alloc(N*N, sizeof(double));
+    shared [N] double * C = (shared [N] double *) upc_all_alloc(N*N, sizeof(double));
 
+    upctr_init((shared double *) A, UPCTR_INIT_INDEX);
+    upctr_init((shared double *) B, UPCTR_INIT_IDENT);
+    upctr_init((shared double *) C, UPCTR_INIT_ZERO);
+ 
+    upc_barrier;
+
+    START_TIMER;
     dgemm(C, A, B);
-
-    if (MYTHREAD == 0) {
-        upctr_print_mat("A", A);
-        upctr_print_mat("B", B);
-        upctr_print_mat("C", C);
-    }
+    END_TIMER;
 
     return 0;
 }

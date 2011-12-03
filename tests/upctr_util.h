@@ -13,6 +13,7 @@ typedef enum _upctr_init_t {
     UPCTR_INIT_ONE,
     UPCTR_INIT_IDENT,
     UPCTR_INIT_INDEX,
+    UPCTR_INIT_THREAD,
     UPCTR_INIT_NONE
 } upctr_init_t;
 
@@ -20,29 +21,25 @@ double rand_double() {
     return (double) rand() / (double) INT_MAX;
 }
 
-shared [N] double * upctr_init_mat(upctr_init_t init_t) {
-    shared [N] double * M = (shared [N] double *) upc_all_alloc(N*N, sizeof(double));
-
+void upctr_init(shared double * M, upctr_init_t init_t) {
     int i, j;
     for (i = 0; i < N; i++) {
         upc_forall (j = 0; j < N; j++; &M[i*N+j]) {
             switch(init_t) {
-                case UPCTR_INIT_RAND:  M[i*N+j] = rand_double();     break;
-                case UPCTR_INIT_ZERO:  M[i*N+j] = 0.0;               break;
-                case UPCTR_INIT_ONE:   M[i*N+j] = 1.0;               break;
-                case UPCTR_INIT_IDENT: M[i*N+j] = (i==j) ? 1.0: 0.0; break;
-                case UPCTR_INIT_INDEX: M[i*N+j] = i*N+j;            break;
+                case UPCTR_INIT_RAND:   M[i*N+j] = rand_double();     break;
+                case UPCTR_INIT_ZERO:   M[i*N+j] = 0.0;               break;
+                case UPCTR_INIT_ONE:    M[i*N+j] = 1.0;               break;
+                case UPCTR_INIT_THREAD: M[i*N+j] = MYTHREAD;          break;
+                case UPCTR_INIT_INDEX:  M[i*N+j] = i*N+j+1;           break;
+                case UPCTR_INIT_IDENT:  M[i*N+j] = (i==j) ? 1.0:0.0;  break;
                 case UPCTR_INIT_NONE:                                 break;
                 default: assert(!"Unreachable");
             }
         }
     }
-    upc_barrier;
-
-    return M;
 }
 
-void upctr_print_mat(char* name, shared [N] double * M) {
+void upctr_print_mat(char* name, shared double * M) {
     printf("%s:\n", name);
 
     int i, j;
@@ -50,7 +47,7 @@ void upctr_print_mat(char* name, shared [N] double * M) {
         for (j = 0; j < N; j++) {
             if (j != 0)
                 printf(", ");
-            printf("%2.0f", M[i*N+j]);
+            printf("%3.0f", M[i*N+j]);
         }
         printf("\n");
     }
