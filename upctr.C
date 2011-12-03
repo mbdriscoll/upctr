@@ -12,6 +12,11 @@
 
 using namespace std;
 
+/*
+ * Global variable to store (for_stmt -> upc_forall.aff_exp) mapping.
+ */
+map<SgForStatement*,SgExpression*> aff_exp_map;
+
 /**
  * Construct an expression which is true when MYTHREAD has affinity to the
  * given integer expression.
@@ -50,38 +55,29 @@ SgExpression* buildHasAffinityExp(SgExpression* exp, SgScopeStatement* scope) {
 }
 
 /**
- * Convert upc_stmt to a standard for statement.
+ * Convert upc_stmt to a standard for statement, and save the affinity expression
+ * for later retrieval.
  */
 SgForStatement* translate(SgUpcForAllStatement* upc_stmt) {
-    SgScopeStatement* scope = upc_stmt->get_scope();
-
-    SgExprStatement* old_test_stmt = isSgExprStatement(upc_stmt->get_test());
-    SgExpression* old_test = old_test_stmt->get_expression();
-    ROSE_ASSERT(old_test);
-
-    SgStatement* new_test_stmt;
-    if (isSgNullExpression( upc_stmt->get_affinity() )) {
-        new_test_stmt = old_test_stmt;
-    } else {
-        SgExpression* has_affinity = buildHasAffinityExp(upc_stmt->get_affinity(), scope);
-        SgExpression* new_test = SageBuilder::buildAndOp(old_test, has_affinity);
-        new_test_stmt = SageBuilder::buildExprStatement(new_test);
-    }
-
     SgForStatement* for_stmt = SageBuilder::buildForStatement(
             upc_stmt->get_for_init_stmt(), /* initialize stmt */
-            new_test_stmt,                 /* test exp */
+            upc_stmt->get_test(),          /* condition */
             upc_stmt->get_increment(),     /* increment */
             upc_stmt->get_loop_body()      /* loop body */
             );
+
+    /* save the affinity expression in the global map */
+    aff_exp_map[for_stmt] = upc_stmt->get_affinity();
     return for_stmt;
 }
 
 int main(int argc, char* argv[])
 {
+    /* Processing cmd line args */
 	vector<string> argvList(argv, argv+argc);
 	UpcLibrary::processOptions(argvList);
 
+    /* Parse the input file */
     SgProject* proj = frontend(argc, argv);
 
     /* collect all upc_forall stmts */
