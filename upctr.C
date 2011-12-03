@@ -20,7 +20,6 @@ using namespace std;
 typedef std::map<SgForStatement*,SgExpression*> aff_map_t;
 aff_map_t aff_exp_map;
 
-
 /**
  * Convert upc_stmt to a standard for statement, and save the affinity expression
  * for later retrieval.
@@ -124,48 +123,5 @@ int main(int argc, char* argv[])
         SageInterface::replaceStatement(for_stmt, translate_to_upc(for_stmt));
 
     proj->unparse();
-#if 0
-    Rose_STL_Container<SgNode*> loops = NodeQuery::querySubTree(proj, V_SgForStatement);
-    if(loops.size() == 0) continue;
-
-    // Replace operators with their equivalent counterparts defined
-    // in "inline" annotations
-    AstInterfaceImpl faImpl_1(body);
-    CPPAstInterface fa_body(&faImpl_1);
-    OperatorInlineRewrite()(fa_body, AstNodePtrImpl(body));
-
-    // Pass annotations to arrayInterface and use them to collect
-    // alias info. function info etc.
-    ArrayAnnotation *annot = ArrayAnnotation::get_inst();
-    ArrayInterface array_interface(*annot);
-    array_interface.initialize(fa_body, AstNodePtrImpl(defn));
-    array_interface.observe(fa_body);
-
-    //FR(06/07/2011): aliasinfo was not set which caused segfault
-    LoopTransformInterface::set_aliasInfo(&array_interface);
-
-    // X. Loop normalization for all loops within body
-    NormalizeForLoop(fa_body, AstNodePtrImpl(body));
-
-    for(Rose_STL_Container<SgNode*>::iterator iter = loops.begin();
-            iter != loops.end(); iter++)
-    {
-        SgNode *current_loop = *iter;
-        // X. Parallelize loop one by one
-        // getLoopInvariant() will actually check if the loop has canonical forms
-        // which can be handled by dependence analysis
-        SgInitializedName *invarname = UpcLibrary::getLoopInvariant(current_loop);
-        LoopTreeDepGraph *depgraph;
-        if(true/*invarname != NULL*/){
-            depgraph = UpcLibrary::ComputeDependenceGraph(current_loop, &array_interface, annot);
-        }
-        else { // Cannot grab loop index from a non-conforming looo, skip Dependence Analysis
-            cout << "Skipping a non-canonical loop at line:"
-                << current_loop->get_file_info()->get_line()
-                << "..." << endl;
-        }
-    }
-#endif
-
     return 0;
 }
