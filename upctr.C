@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <cstring>
+#include <algorithm>
 
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
@@ -71,6 +72,14 @@ SgForStatement* translate(SgUpcForAllStatement* upc_stmt) {
     return for_stmt;
 }
 
+/**
+ * True if LOOP is enclosed in another loop.
+ */
+bool isOuterLoop(SgForStatement* loop) {
+    SgStatement* parent = isSgStatement(loop->get_parent());
+    return SageInterface::findEnclosingLoop( parent ) == NULL;
+}
+
 int main(int argc, char* argv[])
 {
     /* Processing cmd line args */
@@ -99,68 +108,58 @@ int main(int argc, char* argv[])
     foreach (SgForStatement* for_stmt, for_stmts)
 		SageInterface::normalizeForLoopInitDeclaration(for_stmt);
 
-	/* Compute Dependence Graph */
-	SgFilePtrList &ptr_list = proj->get_fileList();
-	cout << "Number of files in project: " << ptr_list.size() << endl;
-	for(SgFilePtrList::iterator iter = ptr_list.begin(); iter != ptr_list.end(); iter++) {
-		SgFile *sageFile = (*iter);
-		SgSourceFile *sfile = isSgSourceFile(sageFile);
-		ROSE_ASSERT(sfile);
-		SgGlobal *root = sfile->get_globalScope();
-		SgDeclarationStatementPtrList &declList = root->get_declarations();
-		for(SgDeclarationStatementPtrList::iterator p = declList.begin(); p != declList.end(); p++){
-			SgFunctionDeclaration *func = isSgFunctionDeclaration(*p);
-			if(func == 0) continue;
-			SgFunctionDefinition *defn = func->get_definition();
-			if(defn == 0) continue;
-			//Ignore functions in system headers
-			if(defn->get_file_info()->get_filename() != sageFile->get_file_info()->get_filename())
-				continue;
+    /* Filter out the inner loops in each nest */
+    vector<SgForStatement*> nests;
+    foreach (SgForStatement* for_stmt, for_stmts)
+        if (isOuterLoop(for_stmt))
+            nests.push_back(for_stmt);
+    printf("Processing %d nests with %d total loops.\n",
+            (int) nests.size(), (int) for_stmts.size());
 
-			SgBasicBlock *body = defn->get_body();
-			// For each loop
-			Rose_STL_Container<SgNode*> loops  = NodeQuery::querySubTree(defn, V_SgForStatement);
-			if(loops.size() == 0) continue;
 
-			// Replace operators with their equivalent counterparts defined
-			// in "inline" annotations
-			AstInterfaceImpl faImpl_1(body);
-			CPPAstInterface fa_body(&faImpl_1);
-			OperatorInlineRewrite()(fa_body, AstNodePtrImpl(body));
 
-			// Pass annotations to arrayInterface and use them to collect
-			// alias info. function info etc.
-			ArrayAnnotation *annot = ArrayAnnotation::get_inst();
-			ArrayInterface array_interface(*annot);
-			array_interface.initialize(fa_body, AstNodePtrImpl(defn));
-			array_interface.observe(fa_body);
+#if 0
+    Rose_STL_Container<SgNode*> loops  = NodeQuery::querySubTree(proj, V_SgForStatement);
+    if(loops.size() == 0) continue;
 
-			//FR(06/07/2011): aliasinfo was not set which caused segfault
-			LoopTransformInterface::set_aliasInfo(&array_interface);
+    // Replace operators with their equivalent counterparts defined
+    // in "inline" annotations
+    AstInterfaceImpl faImpl_1(body);
+    CPPAstInterface fa_body(&faImpl_1);
+    OperatorInlineRewrite()(fa_body, AstNodePtrImpl(body));
 
-			// X. Loop normalization for all loops within body
-			NormalizeForLoop(fa_body, AstNodePtrImpl(body));
+    // Pass annotations to arrayInterface and use them to collect
+    // alias info. function info etc.
+    ArrayAnnotation *annot = ArrayAnnotation::get_inst();
+    ArrayInterface array_interface(*annot);
+    array_interface.initialize(fa_body, AstNodePtrImpl(defn));
+    array_interface.observe(fa_body);
 
-			for(Rose_STL_Container<SgNode*>::iterator iter = loops.begin();
-				iter != loops.end(); iter++)
-			{
-				SgNode *current_loop = *iter;
-				// X. Parallelize loop one by one
-				// getLoopInvariant() will actually check if the loop has canonical forms
-				// which can be handled by dependence analysis
-				SgInitializedName *invarname = UpcLibrary::getLoopInvariant(current_loop);
-				LoopTreeDepGraph *depgraph;
-				if(true/*invarname != NULL*/){
-					depgraph = UpcLibrary::ComputeDependenceGraph(current_loop, &array_interface, annot);
-				}
-				else { // Cannot grab loop index from a non-conforming looo, skip Dependence Analysis
-					cout << "Skipping a non-canonical loop at line:"
-						 << current_loop->get_file_info()->get_line()
-						 << "..." << endl;
-				}
-			}
-		}
-	}
+    //FR(06/07/2011): aliasinfo was not set which caused segfault
+    LoopTransformInterface::set_aliasInfo(&array_interface);
+
+    // X. Loop normalization for all loops within body
+    NormalizeForLoop(fa_body, AstNodePtrImpl(body));
+
+    for(Rose_STL_Container<SgNode*>::iterator iter = loops.begin();
+            iter != loops.end(); iter++)
+    {
+        SgNode *current_loop = *iter;
+        // X. Parallelize loop one by one
+        // getLoopInvariant() will actually check if the loop has canonical forms
+        // which can be handled by dependence analysis
+        SgInitializedName *invarname = UpcLibrary::getLoopInvariant(current_loop);
+        LoopTreeDepGraph *depgraph;
+        if(true/*invarname != NULL*/){
+            depgraph = UpcLibrary::ComputeDependenceGraph(current_loop, &array_interface, annot);
+        }
+        else { // Cannot grab loop index from a non-conforming looo, skip Dependence Analysis
+            cout << "Skipping a non-canonical loop at line:"
+                << current_loop->get_file_info()->get_line()
+                << "..." << endl;
+        }
+    }
+#endif
 
     return 0;
 }
