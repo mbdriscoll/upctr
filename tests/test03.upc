@@ -21,14 +21,14 @@
  * Matrix dimensions must agree.
  * Sets C = AB.
  */
-void dgemm(shared [N] double * C,
-           shared [N] double * A,
-           shared [1] double * B) {
+void dgemm(shared [N] double ** C,
+           shared [N] double ** A,
+           shared [1] double ** B) {
     int i, j, k;
     for (i = 0; i < N; i++) {
-        upc_forall (j = 0; j < N; j++; &C[i*N+j]) {
+        upc_forall (j = 0; j < N; j++; &C[i][j]) {
             for (k = 0; k < N; k++) {
-                C[i*N+j] = C[i*N+j] + A[i*N+k] + B[k*N+j];
+                C[i][j] = C[i][j] + A[i][k] + B[k][j];
             }
         }
     }
@@ -38,13 +38,13 @@ void dgemm(shared [N] double * C,
  * Main. Initializes matrices and runs dgemm.
  */
 int main(int argc, char* argv[]) {
-    shared [N] double * A = (shared [N] double *) upc_all_alloc(N*N, sizeof(double));
-    shared [1] double * B = (shared [1] double *) upc_all_alloc(N*N, sizeof(double));
-    shared [N] double * C = (shared [N] double *) upc_all_alloc(N*N, sizeof(double));
+    shared [N] double ** A = (shared [N] double **) upc_all_alloc(N*N, sizeof(double));
+    shared [1] double ** B = (shared [1] double **) upc_all_alloc(N*N, sizeof(double));
+    shared [N] double ** C = (shared [N] double **) upc_all_alloc(N*N, sizeof(double));
 
-    upctr_init((shared double *) A, UPCTR_INIT_INDEX);
-    upctr_init((shared double *) B, UPCTR_INIT_IDENT);
-    upctr_init((shared double *) C, UPCTR_INIT_ZERO);
+    upctr_init((shared double **) A, UPCTR_INIT_INDEX);
+    upctr_init((shared double **) B, UPCTR_INIT_IDENT);
+    upctr_init((shared double **) C, UPCTR_INIT_ZERO);
  
     upc_barrier;
 
