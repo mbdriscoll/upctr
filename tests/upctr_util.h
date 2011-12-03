@@ -5,6 +5,7 @@
 #include <string.h>
 #include <assert.h>
 #include <time.h>
+#include <sys/time.h>
 #include <limits.h>
 
 #define START_TIMER bupc_tick_t start; \
@@ -28,7 +29,13 @@ typedef enum _upctr_init_t {
 } upctr_init_t;
 
 double rand_double() {
-    return (double) rand() / (double) INT_MAX;
+	time_t t;
+	static short init = 0;
+	if(!init){
+		init = 1;
+		srand((unsigned)time(&t));
+	}
+	return (double) rand()/ (double) INT_MAX;
 }
 
 void upctr_init(shared double ** M, upctr_init_t init_t) {
@@ -62,4 +69,51 @@ void upctr_print_mat(char* name, shared double ** M) {
         printf("\n");
     }
     printf("\n");
+}
+
+//Additions for vecadd set
+shared double* upctr_init_vec(int n, upctr_init_t init_t) {
+    shared double* M = (shared double*) upc_all_alloc(n, sizeof(double));
+
+    int i;
+    upc_forall (i = 0; i < n; i++; &M[i]) {
+		switch(init_t) {
+			case UPCTR_INIT_RAND:  M[i] = rand_double();     break;
+			case UPCTR_INIT_ZERO:  M[i] = 0.0;               break;
+			case UPCTR_INIT_ONE:   M[i] = 1.0;               break;
+			case UPCTR_INIT_INDEX: M[i] = i;	             break;
+			case UPCTR_INIT_NONE:                            break;
+			default: assert(!"Unreachable");
+		}
+    }
+
+    return M;
+}
+#define	BLOCK_SIZE	1000
+void upctr_init_vec_static(shared [BLOCK_SIZE] double *a, int n, upctr_init_t init_t){
+	int i;
+	upc_forall(i=0;i<n;i++;&a[i]){
+		switch(init_t){
+			case UPCTR_INIT_RAND: a[i] = rand_double(); break;
+			case UPCTR_INIT_ZERO: a[i] = 0.0; break;
+			default:
+				assert(!"Not implemented");
+		}
+	}
+}
+
+void upctr_timer(const char *desc){
+	if(MYTHREAD == 0){
+		static short init = 0;
+		static struct timeval start, end;
+		if(!init){
+			init = 1;
+			gettimeofday(&start, NULL);
+		}
+		else {
+			gettimeofday(&end, NULL);
+			printf("%-30s \t[%lf seconds]\n", desc, (end.tv_sec+(double)end.tv_usec/1000000.0) - (start.tv_sec+(double)start.tv_usec/1000000.0));
+			start = end;
+		}
+	}
 }
