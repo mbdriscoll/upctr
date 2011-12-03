@@ -18,42 +18,6 @@ using namespace std;
  */
 map<SgForStatement*,SgExpression*> aff_exp_map;
 
-/**
- * Construct an expression which is true when MYTHREAD has affinity to the
- * given integer expression.
- *
- * TODO: check type of elem_exp (int) to sanitize
- */
-
-SgExpression* buildHasAffinityExp_Int(SgExpression* int_exp, SgScopeStatement* scope) {
-    SgUpcMythread* mythread = SageBuilder::buildUpcMythread();
-    SgModOp* mod_exp = SageBuilder::buildModOp(int_exp, mythread);
-    SgIntVal* zero = SageBuilder::buildIntVal(0);
-    return SageBuilder::buildEqualityOp(mod_exp, zero);
-}
-
-/**
- * Construct an expression which is true when MYTHREAD has affinity to the
- * given pointer-to-shared expression.
- *
- * TODO: check type of elem_exp (pointer-to-shared) to sanitize
- */
-SgExpression* buildHasAffinityExp_Ptr(SgExpression* elem_exp, SgScopeStatement* scope) {
-    SgUpcMythread* mythread = SageBuilder::buildUpcMythread();
-    SgExpression* elem_affinity = UpcLibrary::buildThreadOfCall(elem_exp, scope);
-    return SageBuilder::buildEqualityOp(mythread, elem_affinity);
-}
-
-/**
- * Construct an expression which is true when MYTHREAD has affinity to exp, which
- * must either be an integer or pointer-to-shared expression.
- */
-SgExpression* buildHasAffinityExp(SgExpression* exp, SgScopeStatement* scope) {
-    if (exp->get_type()->isIntegerType())
-        return buildHasAffinityExp_Int(exp, scope);
-    else /* pointer-to-shared */
-        return buildHasAffinityExp_Ptr(exp, scope);
-}
 
 /**
  * Convert upc_stmt to a standard for statement, and save the affinity expression
