@@ -60,7 +60,7 @@ UpcLibrary::ComputeDependenceGraph(SgNode* loop)
 	LoopTransformInterface::set_sideEffectInfo(annot);
 	LoopTreeDepCompCreate* comp = new LoopTreeDepCompCreate(head);// TODO when to release this?
 	// Retrieve dependence graph here!
-	if (true)
+	if (UpcLibrary::debug)
 	{
 		cout<<"Debug: Dump the dependence graph for the loop in question:"<<endl;
 		comp->DumpDep();

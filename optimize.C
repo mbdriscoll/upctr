@@ -8,4 +8,6 @@ using namespace std;
  */
 void optimize(SgForStatement* nest) {
     LoopTreeDepGraph* depgraph = UpcLibrary::ComputeDependenceGraph(nest);
+
+    // TODO fancy things with the dep graph
 }
