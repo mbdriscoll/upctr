@@ -19,6 +19,21 @@ UpcLibrary::buildThreadOfCall(
     return threadof;
 }
 
+/**
+ * True if this is a dependence type that we care about.
+ */
+bool
+UpcLibrary::depFilter(DepType dt) {
+    switch(dt) {
+        case DEPTYPE_TRUE:
+        case DEPTYPE_ANTI:
+        case DEPTYPE_OUTPUT:
+            return true;
+        default:
+            return false;
+    }
+}
+
 /*
  * Print the dependence graph to FILENAME in the DOT format, to be read by
  * Graphviz, zgrviewer, etc.
@@ -36,6 +51,11 @@ UpcLibrary::printDepGraphAsDot(LoopTreeDepGraph* depgraph, char* filename) {
         for (DepInfoConstIterator depIter = edgep.Current()->get_depIterator();
                 !depIter.ReachEnd(); depIter++) {
             DepInfo d = depIter.Current();
+            DepType type = d.GetDepType();
+
+            /* continue if we don't care about this type of dependence. */
+            if (!depFilter(type)) continue;
+
             SgNode* src =  (SgNode*) d.SrcRef().get_ptr();
             SgNode* sink = (SgNode*) d.SnkRef().get_ptr();
             if (printed_nodes.find(src) == printed_nodes.end()) {
@@ -48,7 +68,6 @@ UpcLibrary::printDepGraphAsDot(LoopTreeDepGraph* depgraph, char* filename) {
                 fprintf(ofile, "n%p [label=\"%s\"];\n", sink,
                         sink->unparseToString().c_str());
             }
-            DepType type = d.GetDepType();
             int level = d.CommonLevel();
             fprintf(ofile, "n%p -> n%p [label=\"level: %d\\n%s\"];\n",
                     src, sink, level, DepType2String(type).c_str());

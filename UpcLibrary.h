@@ -36,6 +36,8 @@ namespace UpcLibrary {
             LoopTreeDepGraph* depgraph,
             char* filename);
 
+    bool depFilter(DepType dt);
+
 	void processOptions(
 			std::vector<std::string> &argvList);
 
