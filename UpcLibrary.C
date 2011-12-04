@@ -3,7 +3,7 @@
 
 using namespace std;
 
-bool UpcLibrary::debug = true;
+bool UpcLibrary::debug = false;
 bool UpcLibrary::phase2_only = false;
 
 SgExpression*
@@ -17,6 +17,46 @@ UpcLibrary::buildThreadOfCall(
     SgExpression* threadof =
         SageBuilder::buildFunctionCallExp(name, return_type, params, scope);
     return threadof;
+}
+
+/*
+ * Print the dependence graph to FILENAME in the DOT format, to be read by
+ * Graphviz, zgrviewer, etc.
+ */
+void
+UpcLibrary::printDepGraphAsDot(LoopTreeDepGraph* depgraph, char* filename) {
+    ROSE_ASSERT(depgraph);
+
+    FILE* ofile = fopen(filename, "w");
+    fprintf(ofile, "digraph G {\n");
+
+    set<SgNode*> printed_nodes;
+    GraphEdgeIterator<LoopTreeDepGraph> edgep(depgraph);
+    for ( ; !edgep.ReachEnd(); ++edgep) {
+        for (DepInfoConstIterator depIter = edgep.Current()->get_depIterator();
+                !depIter.ReachEnd(); depIter++) {
+            DepInfo d = depIter.Current();
+            SgNode* src =  (SgNode*) d.SrcRef().get_ptr();
+            SgNode* sink = (SgNode*) d.SnkRef().get_ptr();
+            if (printed_nodes.find(src) == printed_nodes.end()) {
+                printed_nodes.insert(src);
+                fprintf(ofile, "%x [label=\"%s\"];\n", src,
+                        src->unparseToString().c_str());
+            }
+            if (printed_nodes.find(sink) == printed_nodes.end()) {
+                printed_nodes.insert(sink);
+                fprintf(ofile, "%x [label=\"%s\"];\n", sink,
+                        sink->unparseToString().c_str());
+            }
+            DepType type = d.GetDepType();
+            int level = d.CommonLevel();
+            fprintf(ofile, "%x -> %x [label=\"level: %d\\n%s\"];\n",
+                    src, sink, level, DepType2String(type).c_str());
+        }
+    }
+
+    fprintf(ofile, "}\n");
+    fclose(ofile);
 }
 
 // From AutoParallelization project

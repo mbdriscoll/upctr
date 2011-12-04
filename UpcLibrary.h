@@ -32,6 +32,10 @@ namespace UpcLibrary {
 	LoopTreeDepGraph* ComputeDependenceGraph(
 			SgNode* loop);
 
+    void printDepGraphAsDot(
+            LoopTreeDepGraph* depgraph,
+            char* filename);
+
 	void processOptions(
 			std::vector<std::string> &argvList);
 

@@ -9,5 +9,8 @@ using namespace std;
 void optimize(SgForStatement* nest) {
     LoopTreeDepGraph* depgraph = UpcLibrary::ComputeDependenceGraph(nest);
 
+    if (UpcLibrary::debug)
+        UpcLibrary::printDepGraphAsDot(depgraph, "graph.dot");
+
     // TODO fancy things with the dep graph
 }
