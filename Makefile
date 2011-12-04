@@ -1,5 +1,5 @@
-FILES=upctr.C UpcLibrary.C optimize.C
-HEADERS=UpcLibrary.h optimize.h
+FILES=upctr.C UpcLibrary.C optimize.C builder.C
+HEADERS=UpcLibrary.h optimize.h builder.h
 MBD_CXXFLAGS=-I/Users/driscoll6/rose-clean/install/include -I/Users/driscoll6/macports/include
 MBD_LDFLAGS=-L/Users/driscoll6/rose-clean/install/lib -L/Users/driscoll6/macports/lib
 CXXFLAGS=-I/usr/local/include $(MBD_CXXFLAGS) -g -Wall
@@ -8,7 +8,7 @@ UPCC=upcc
 
 all: upctr
 
-upctr: upctr.o UpcLibrary.o optimize.o
+upctr: upctr.o UpcLibrary.o optimize.o builder.o
 
 check: upctr
 	./upctr tests/dgemm.upc -Itests -rose:upc_threads 4 -rose:skipFinalCompileStep

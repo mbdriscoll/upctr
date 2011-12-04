@@ -2,6 +2,7 @@
 #define foreach BOOST_FOREACH
 
 #include "optimize.h"
+#include "builder.h"
 #include "UpcLibrary.h"
 #include "AstDOTGeneration.h"
 
@@ -30,26 +31,55 @@ int getLoopLevel(SgExpression* exp) {
 }
 
 /**
+ * True if this reference is a write.
+ */
+bool isWrite(SgPntrArrRefExp* reference) {
+    cerr << "Warning: isWrite() is unimplemented." << endl;
+    return true;
+}
+
+/**
+ * True if this reference is a read.
+ */
+bool isRead(SgPntrArrRefExp* reference) {
+    cerr << "Warning: isRead() is unimplemented." << endl;
+    return true;
+}
+
+/**
  * Localize REF. Must be localizable.
  */
-void localize(SgPntrArrRefExp* reference,
+void localize(SgPntrArrRefExp* shared_ref,
               SgExpression* subscript,
               SgForStatement* target) {
 
     printf("localizing %s from %s around %s loop\n",
             subscript->unparseToString().c_str(),
-            reference->unparseToString().c_str(),
+            shared_ref->unparseToString().c_str(),
             target->get_increment()->unparseToString().c_str());
 
-    /* TODO create a new local array __upctr_local_NAME */
+    /* create a new local array __upctr_local_NAME */
+    SgExpression* local_array = UpctrBuilder::buildLocalArray(shared_ref, subscript);
+    SgExpression* local_ref = UpctrBuiler::buildLocalReference(local_array, subscript);
 
-    /* TODO replace subscript with a reference to the local array */
+    /* replace subscript with a reference to the local array */
+    SageInterface::replaceStatement(shared_ref, local_ref);
 
-    /* TODO if subscript is a read, insert bupc_memget_strided call
+    /* if subscript is a read, insert bupc_memget_strided call
      * before target via SageInterface::prependStatement */
+    if ( isRead(shared_ref) ) {
+        SgStatement* fetch_stmt =
+            UpctrBuilder::buildFetch(local_array, shared_ref, subscript);
+        SageInterface::prependStatement(fetch_stmt, target->get_scope());
+    }
 
-    /* TODO if subscript is a write, insert bupc_memput_strided call
+    /* if subscript is a write, insert bupc_memput_strided call
      * after target via SageInterface::appendStatement */
+    if ( isWrite(shared_ref) ) {
+        SgStatement* store_stmt =
+            UpctrBuilder::buildStore(shared_ref, local_array, subscript);
+        SageInterface::appendStatement(store_stmt, target->get_scope());
+    }
 }
 
 bool
