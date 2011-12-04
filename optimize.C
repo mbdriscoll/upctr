@@ -35,9 +35,6 @@ int getLoopLevel(SgExpression* exp) {
 void localize(SgExpression* subscript,
               SgForStatement* target) {
 
-    printf("Localize %s around %s\n", subscript->unparseToString().c_str(),
-            target->unparseToString().c_str());
-
     /* TODO create a new local array __upctr_local_NAME */
 
     /* TODO replace subscript with a reference to the local array */
@@ -95,7 +92,7 @@ loopIndexIsSubscript(SgForStatement* loop, SgExpression* subscript) {
         isSgVariableSymbol( loop_iname->get_symbol_from_symbol_table() );
 
     /* compare the symbols */
-    return subscript_sym && index_sym && subscript_sym == index_sym;
+    return subscript_sym == index_sym;
 }
 
 
@@ -122,12 +119,12 @@ find_and_localize(LoopTreeDepGraph* depgraph,
     SgExpression* subscript = NULL;
     SgForStatement* target = NULL;
     SgForStatement* loop = getEnclosingNode<SgForStatement>(reference);
-    SgForStatement* next_loop = getEnclosingNode<SgForStatement>(target);
+    SgForStatement* next_loop = getEnclosingNode<SgForStatement>(loop);
     for (int level = getLoopLevel(reference); level > 0; level--) {
 
         /* return if reference carried deps at this level */
         if (hasLoopCarriedDepsAtLevel(depgraph, reference, level))
-            break;
+            return;
 
         /* find possibly 1 subscript that is controlled by this loop level */
         foreach (SgExpression* subscript_exp, *subscript_exps) {
@@ -151,16 +148,15 @@ find_and_localize(LoopTreeDepGraph* depgraph,
             goto identified;
         }
 
-        next_loop = getEnclosingNode<SgForStatement>(loop);
         loop = next_loop;
+        next_loop = getEnclosingNode<SgForStatement>(loop);
     }
 
 identified:
 
     /* if we found a target, make the transformation */
-    if (subscript != NULL && target != NULL) {
+    if (subscript != NULL && target != NULL)
         localize(subscript, target);
-    }
 }
 
 /**
