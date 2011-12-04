@@ -6,6 +6,7 @@
 #include "AstDOTGeneration.h"
 
 using namespace std;
+using namespace SageInterface;
 
 /**
  * True if REF is a top-level array reference.
@@ -31,26 +32,38 @@ void localize(SgExpression* subscript, SgForStatement* target) {
 }
 
 /**
- * Returns the outermost ForStatement that can be wrapped
- * in localization logic. If the subscript cannot be
- * localized, return NULL.
+ * For the given reference, test if it can be localized. If it can,
+ * localize it.
  *
- * upc_memget_strided(A_local, A, 100);
- * for (...) { ... A_local[..] ... } // (target)
- * upc_memput_strided(A, A_local, 100);
+ * Localization is legal at given level if the reference has no
+ * loop-carried dependences at or inside the level in question.
+ *
+ * Localization is most profitable at the level just inside the
+ * innermost upc_forall loop.
+ *
+ * 1-dimensional localization must occur inside the loop iterating
+ * over the second dimension.
  */
-SgForStatement*
-find_localization_target(LoopTreeDepGraph* deps,
+void
+find_and_localize(LoopTreeDepGraph* deps,
                   SgPntrArrRefExp*  reference,
-                  SgExpression*     subscript) {
+                  vector<SgExpression*>* subscript_exps) {
 
-    /* TODO improve this function. I believe the target should be the
-     * outermost loop that isn't a upc_forall loop and the common
-     * 'ancestor' of the subscripts. So, for an A[i][k] reference in
-     * an (i, j, k) nest, the target would be the j loop. */
+    /* convert subscripts to a name. fail on more complicated subscripts */
+    vector<SgVariableSymbol*> subscripts;
+    foreach (SgExpression* subscript_exp, *subscript_exps) {
+        SgVarRefExp* varref = isSgVarRefExp(subscript_exp);
+        if (varref == NULL) {
+            cerr << "Warning: skipping complicated subscript: "
+                << subscript_exp->unparseToString() << " class="
+                << subscript_exp->class_name() << endl;
+            continue;
+        }
+        subscripts.push_back( varref->get_symbol() );
+    }
 
-    /* for now, just return the enclosing loop */
-    return SageInterface::getEnclosingNode<SgForStatement>(reference);
+    /* Walk outward until we can't keep the local array 1d */
+    SgForStatement* target = getEnclosingNode<SgForStatement>(reference);
 }
 
 /**
@@ -85,20 +98,9 @@ void optimize(SgForStatement* nest) {
         vector<SgExpression*>* subscript_exps = new vector<SgExpression*>();;
         assert(SageInterface::isArrayReference(array_ref, &name_exp, &subscript_exps));
 
-        /* TODO: fail on complicated subscripts */
-
-        /* attempt localization for each subscript */
-        foreach (SgExpression* subscript_exp, *subscript_exps) {
-
-            /* find the outermost for-stmt around which this subscript
-             * can be localized. */
-            SgForStatement* target =
-                find_localization_target(depgraph, array_ref, subscript_exp);
-
-            /* if a target exists, localize the subscript */
-            if (target != NULL)
-                localize(subscript_exp, target);
-        }
+        /* find the outermost for-stmt around which this subscript
+         * can be localized, and localize it */
+        find_and_localize(depgraph, array_ref, subscript_exps);
 
         /* cleanup */
         delete subscript_exps;
