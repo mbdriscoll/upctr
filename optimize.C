@@ -32,8 +32,14 @@ int getLoopLevel(SgExpression* exp) {
 /**
  * Localize REF. Must be localizable.
  */
-void localize(SgExpression* subscript,
+void localize(SgPntrArrRefExp* reference,
+              SgExpression* subscript,
               SgForStatement* target) {
+
+    printf("localizing %s from %s around %s loop\n",
+            subscript->unparseToString().c_str(),
+            reference->unparseToString().c_str(),
+            target->get_increment()->unparseToString().c_str());
 
     /* TODO create a new local array __upctr_local_NAME */
 
@@ -156,7 +162,7 @@ identified:
 
     /* if we found a target, make the transformation */
     if (subscript != NULL && target != NULL)
-        localize(subscript, target);
+        localize(reference, subscript, target);
 }
 
 /**
