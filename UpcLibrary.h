@@ -43,4 +43,7 @@ namespace UpcLibrary {
 
 } /* end namespace UpcLibrary */
 
+typedef std::map<SgForStatement*,SgExpression*> aff_map_t;
+extern aff_map_t aff_exp_map;
+
 #endif /* _UPC_LIBRARY_H_ */

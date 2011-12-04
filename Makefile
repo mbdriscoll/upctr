@@ -11,7 +11,7 @@ all: upctr
 upctr: upctr.o UpcLibrary.o optimize.o
 
 check: upctr
-	./upctr tests/dgemm.upc -debug -Itests -rose:upc_threads 4 -rose:skipFinalCompileStep
+	./upctr tests/dgemm.upc -Itests -rose:upc_threads 4 -rose:skipFinalCompileStep
 
 clean:
 	rm -rf *.o upctr *.upc

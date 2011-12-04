@@ -34,6 +34,10 @@ int getLoopLevel(SgExpression* exp) {
  */
 void localize(SgExpression* subscript,
               SgForStatement* target) {
+
+    printf("Localize %s around %s\n", subscript->unparseToString().c_str(),
+            target->unparseToString().c_str());
+
     /* TODO create a new local array __upctr_local_NAME */
 
     /* TODO replace subscript with a reference to the local array */
@@ -54,8 +58,46 @@ hasLoopCarriedDepsAtLevel(LoopTreeDepGraph* depgraph,
      * yield false when passed to UpcLibrary::depFilter */
 
     cerr << "Warning: hasLoopCarriedDepsAtLevel() is unimplemented." << endl;
-    return false;
+
+    /* for now, true if the array referenced is not named 'C' */
+    reference = isSgPntrArrRefExp(reference->get_lhs_operand());
+    if (reference == NULL) return true;
+    SgVarRefExp* var = isSgVarRefExp(reference->get_lhs_operand());
+    if (var == NULL) return true;
+    return "C" == var->get_symbol()->get_name().getString();
 }
+
+/**
+ * True if LOOP was a upc_forall loop that we converted to a plain loop.
+ */
+bool
+loopWasUpcForall(SgForStatement* loop) {
+    return aff_exp_map.find(loop) != aff_exp_map.end();
+}
+
+/**
+ * True if SUBSCRIPT is the same as the loop index variable.
+ */
+bool
+loopIndexIsSubscript(SgForStatement* loop, SgExpression* subscript) {
+    /* extract the subscript's symbol */
+    SgVarRefExp* varref = isSgVarRefExp(subscript);
+    if (varref == NULL) {
+        cerr << "Warning: complicated subscript: "
+            << subscript->unparseToString() << endl;
+        assert(!"Bad input program.");
+    }
+    SgVariableSymbol* subscript_sym = varref->get_symbol();
+
+    /* lookup the loop index symbol */
+    SgInitializedName* loop_iname = getLoopIndexVariable(loop);
+    SgVariableSymbol* index_sym =
+        isSgVariableSymbol( loop_iname->get_symbol_from_symbol_table() );
+
+    /* compare the symbols */
+    return subscript_sym && index_sym && subscript_sym == index_sym;
+}
+
 
 /**
  * For the given reference, test if it can be localized. If it can,
@@ -75,36 +117,48 @@ find_and_localize(LoopTreeDepGraph* depgraph,
                   SgPntrArrRefExp*  reference,
                   vector<SgExpression*>* subscript_exps) {
 
-    /* convert subscripts to a name. fail on more complicated subscripts */
-    map<SgVariableSymbol*,SgExpression*> subscripts;
-    foreach (SgExpression* subscript_exp, *subscript_exps) {
-        SgVarRefExp* varref = isSgVarRefExp(subscript_exp);
-        if (varref == NULL) {
-            cerr << "Warning: complicated subscript: "
-                 << subscript_exp->unparseToString() << endl;
-            return;
-        }
-        subscripts[varref->get_symbol()] = subscript_exp;
-    }
-
     /* Walk outward until we can't keep the local array 1d. if we find a
      * subscript that can be localized, set SUBSCRIPT  */
     SgExpression* subscript = NULL;
-    SgForStatement* target = getEnclosingNode<SgForStatement>(reference);
+    SgForStatement* target = NULL;
+    SgForStatement* loop = getEnclosingNode<SgForStatement>(reference);
+    SgForStatement* next_loop = getEnclosingNode<SgForStatement>(target);
     for (int level = getLoopLevel(reference); level > 0; level--) {
-        printf(" checking level %d for %s\n",
-               level, reference->unparseToString().c_str());
 
-        if (hasLoopCarriedDepsAtLevel(depgraph, reference, level)) {
-            printf(" will not localize %s (loop-carried deps at level %d)\n",
-                   reference->unparseToString().c_str(), level);
-            return;
+        /* return if reference carried deps at this level */
+        if (hasLoopCarriedDepsAtLevel(depgraph, reference, level))
+            break;
+
+        /* find possibly 1 subscript that is controlled by this loop level */
+        foreach (SgExpression* subscript_exp, *subscript_exps) {
+
+            /* if we haven't found the first dimension, look for it */
+            if (subscript == NULL && loopIndexIsSubscript(loop, subscript_exp))
+                subscript = subscript_exp;
+
+            /* if we have found the first dimension, look for the target loop */
+            if (subscript != NULL &&
+                (next_loop == NULL || loopIndexIsSubscript(next_loop, subscript_exp))) {
+                target = loop;
+                goto identified;
+            }
         }
+
+        /* notice if the next loop level is a upc_forall loop */
+        bool outermost_within_upc_forall = loopWasUpcForall(next_loop);
+        if (outermost_within_upc_forall) {
+            target = loop;
+            goto identified;
+        }
+
+        next_loop = getEnclosingNode<SgForStatement>(loop);
+        loop = next_loop;
     }
 
+identified:
+
     /* if we found a target, make the transformation */
-    if (subscript != NULL) {
-        assert(target != NULL);
+    if (subscript != NULL && target != NULL) {
         localize(subscript, target);
     }
 }

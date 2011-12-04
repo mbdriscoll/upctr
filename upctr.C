@@ -17,7 +17,6 @@ using namespace std;
 /*
  * Global variable to store (for_stmt -> upc_forall.aff_exp) mapping.
  */
-typedef std::map<SgForStatement*,SgExpression*> aff_map_t;
 aff_map_t aff_exp_map;
 
 /**
