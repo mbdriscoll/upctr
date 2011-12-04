@@ -60,13 +60,13 @@ UpcLibrary::printDepGraphAsDot(LoopTreeDepGraph* depgraph, char* filename) {
             SgNode* sink = (SgNode*) d.SnkRef().get_ptr();
             if (printed_nodes.find(src) == printed_nodes.end()) {
                 printed_nodes.insert(src);
-                fprintf(ofile, "n%p [label=\"%s\"];\n", src,
-                        src->unparseToString().c_str());
+                fprintf(ofile, "n%p [label=\"%s\\n%s\"];\n", src,
+                        src->class_name().c_str(), src->unparseToString().c_str());
             }
             if (printed_nodes.find(sink) == printed_nodes.end()) {
                 printed_nodes.insert(sink);
-                fprintf(ofile, "n%p [label=\"%s\"];\n", sink,
-                        sink->unparseToString().c_str());
+                fprintf(ofile, "n%p [label=\"%s\\n%s\"];\n", sink,
+                        sink->class_name().c_str(), sink->unparseToString().c_str());
             }
             int level = d.CommonLevel();
             fprintf(ofile, "n%p -> n%p [label=\"level: %d\\n%s\"];\n",
