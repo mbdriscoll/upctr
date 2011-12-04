@@ -23,7 +23,7 @@ void dgemm(shared [N] double ** C,
     for (i = 0; i < N; i++) {
         upc_forall (j = 0; j < N; j++; &C[i][j]) {
             for (k = 0; k < N; k++) {
-                C[i][j] = C[i][j] + A[i][k] + B[k][j];
+                C[i][j] += A[i][k] + B[k][j];
             }
         }
     }

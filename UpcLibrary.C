@@ -40,17 +40,17 @@ UpcLibrary::printDepGraphAsDot(LoopTreeDepGraph* depgraph, char* filename) {
             SgNode* sink = (SgNode*) d.SnkRef().get_ptr();
             if (printed_nodes.find(src) == printed_nodes.end()) {
                 printed_nodes.insert(src);
-                fprintf(ofile, "%x [label=\"%s\"];\n", src,
+                fprintf(ofile, "n%p [label=\"%s\"];\n", src,
                         src->unparseToString().c_str());
             }
             if (printed_nodes.find(sink) == printed_nodes.end()) {
                 printed_nodes.insert(sink);
-                fprintf(ofile, "%x [label=\"%s\"];\n", sink,
+                fprintf(ofile, "n%p [label=\"%s\"];\n", sink,
                         sink->unparseToString().c_str());
             }
             DepType type = d.GetDepType();
             int level = d.CommonLevel();
-            fprintf(ofile, "%x -> %x [label=\"level: %d\\n%s\"];\n",
+            fprintf(ofile, "n%p -> n%p [label=\"level: %d\\n%s\"];\n",
                     src, sink, level, DepType2String(type).c_str());
         }
     }
