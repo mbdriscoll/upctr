@@ -17,9 +17,23 @@ bool isOuterReference(SgPntrArrRefExp* ref) {
 }
 
 /**
+ * The number of loops enclosing the given expression.
+ */
+int getLoopLevel(SgExpression* exp) {
+    int level = 0;
+    SgForStatement* for_stmt = getEnclosingNode<SgForStatement>(exp);
+    while (for_stmt != NULL) {
+        level += 1;
+        for_stmt = getEnclosingNode<SgForStatement>(for_stmt);
+    }
+    return level;
+}
+
+/**
  * Localize REF. Must be localizable.
  */
-void localize(SgExpression* subscript, SgForStatement* target) {
+void localize(SgExpression* subscript,
+              SgForStatement* target) {
     /* TODO create a new local array __upctr_local_NAME */
 
     /* TODO replace subscript with a reference to the local array */
@@ -29,6 +43,18 @@ void localize(SgExpression* subscript, SgForStatement* target) {
 
     /* TODO if subscript is a write, insert bupc_memput_strided call
      * after target via SageInterface::appendStatement */
+}
+
+bool
+hasLoopCarriedDepsAtLevel(LoopTreeDepGraph* depgraph,
+                          SgPntrArrRefExp* reference,
+                          int level) {
+    /* TODO implement hasLoopCarriedDepsAtLevel. Do not
+     * worry about deps at other levels, or deps that
+     * yield false when passed to UpcLibrary::depFilter */
+
+    cerr << "Warning: hasLoopCarriedDepsAtLevel() is unimplemented." << endl;
+    return false;
 }
 
 /**
@@ -45,25 +71,42 @@ void localize(SgExpression* subscript, SgForStatement* target) {
  * over the second dimension.
  */
 void
-find_and_localize(LoopTreeDepGraph* deps,
+find_and_localize(LoopTreeDepGraph* depgraph,
                   SgPntrArrRefExp*  reference,
                   vector<SgExpression*>* subscript_exps) {
 
     /* convert subscripts to a name. fail on more complicated subscripts */
-    vector<SgVariableSymbol*> subscripts;
+    map<SgVariableSymbol*,SgExpression*> subscripts;
     foreach (SgExpression* subscript_exp, *subscript_exps) {
         SgVarRefExp* varref = isSgVarRefExp(subscript_exp);
         if (varref == NULL) {
-            cerr << "Warning: skipping complicated subscript: "
-                << subscript_exp->unparseToString() << " class="
-                << subscript_exp->class_name() << endl;
-            continue;
+            cerr << "Warning: complicated subscript: "
+                 << subscript_exp->unparseToString() << endl;
+            return;
         }
-        subscripts.push_back( varref->get_symbol() );
+        subscripts[varref->get_symbol()] = subscript_exp;
     }
 
-    /* Walk outward until we can't keep the local array 1d */
+    /* Walk outward until we can't keep the local array 1d. if we find a
+     * subscript that can be localized, set SUBSCRIPT  */
+    SgExpression* subscript = NULL;
     SgForStatement* target = getEnclosingNode<SgForStatement>(reference);
+    for (int level = getLoopLevel(reference); level > 0; level--) {
+        printf(" checking level %d for %s\n",
+               level, reference->unparseToString().c_str());
+
+        if (hasLoopCarriedDepsAtLevel(depgraph, reference, level)) {
+            printf(" will not localize %s (loop-carried deps at level %d)\n",
+                   reference->unparseToString().c_str(), level);
+            return;
+        }
+    }
+
+    /* if we found a target, make the transformation */
+    if (subscript != NULL) {
+        assert(target != NULL);
+        localize(subscript, target);
+    }
 }
 
 /**
