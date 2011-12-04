@@ -20,8 +20,8 @@ void dgemm(shared [N] double ** C,
            shared [N] double ** A,
            shared [1] double ** B) {
     int i, j, k;
-    for (i = 0; i < N; i++) {
-        upc_forall (j = 0; j < N; j++; &C[i][j]) {
+    upc_forall (i = 0; i < N; i++; &C[i][0]) {
+        for (j = 0; j < N; j++) {
             for (k = 0; k < N; k++) {
                 C[i][j] += A[i][k] + B[k][j];
             }

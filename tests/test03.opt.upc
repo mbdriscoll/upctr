@@ -26,18 +26,19 @@ void dgemm(shared [N] double ** C,
            shared [1] double ** B) {
     int i, j, k;
 
-    for (i = 0; i < N; i++) {
-        upc_forall (j = 0; j < N; j++; &C[i][j]) {
+    upc_forall (i = 0; i < N; i++; &C[i][0]) {
+        /* memget A */
+        double A_local[N];
+        size_t dststrides[] = {sizeof(double)};
+        size_t srcstrides[] = {sizeof(double)};
+        size_t count[] = {sizeof(double), N};
+        size_t stridelevels = 1;
+        bupc_memget_strided(A_local, dststrides,
+                &A[i][0], srcstrides,
+                count, stridelevels);
 
-            /* memget A */
-            double A_local[N];
-            size_t dststrides[] = {sizeof(double)};
-            size_t srcstrides[] = {sizeof(double)};
-            size_t count[] = {sizeof(double), N};
-            size_t stridelevels = 1;
-            bupc_memget_strided(A_local, dststrides,
-                                &A[i][0], srcstrides,
-                                count, stridelevels);
+        for (j = 0; j < N; j++) {
+
 
             /* memget B */
             double B_local[N];
