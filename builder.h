@@ -9,16 +9,18 @@ namespace UpctrBuilder {
      * Build AST to declare local array. Will look something like:
      *     double* __upctr_local_A[N];
      */
-    SgVariableDeclaration* buildLocalArrayDecl(
-            SgPntrArrRefExp* shared_ref, SgExpression* subscript);
+    SgVariableDeclaration* buildLocalArrayDecl(SgPntrArrRefExp* shared_ref,
+                                               SgExpression* subscript,
+                                               SgScopeStatement* scope);
 
     /*
      * Build AST to reference the given local array. Will look
      * something like:
      *     __upctr_local_A[k]
      */
-    SgExpression* buildLocalReference(
-            SgVariableDeclaration* local_array_decl, SgExpression* subscript);
+    SgExpression* buildLocalReference(SgVariableDeclaration* local_array_decl,
+                                      SgExpression* subscript,
+                                      SgScopeStatement* scope);
 
     /*
      * Build AST to execute fetch of shared_array into local_array. Will

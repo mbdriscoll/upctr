@@ -6,10 +6,40 @@
 using namespace std;
 using namespace SageBuilder;
 
+string
+getArrayName(SgPntrArrRefExp* ref) {
+    SgExpression* oldname_exp;
+    assert( SageInterface::isArrayReference(ref, &oldname_exp) );
+    SgVarRefExp* var = isSgVarRefExp(oldname_exp);
+    return var->get_symbol()->get_name().getString();
+}
+
+SgType*
+getArrayType(SgPntrArrRefExp* ref, SgExpression* len) {
+    /* TODO extract type of reference array. for now, use double* */
+    return buildArrayType( buildDoubleType(), len );
+}
+
+SgType*
+stripSharedQualifier(SgType* type) {
+    /* TODO strip shared qualifier, for now leave it */
+    return type;
+}
+
+/*
+ * Build a declaration of a local array:
+ * double* __upctr_local_A[N];
+ */
 SgVariableDeclaration*
-UpctrBuilder::buildLocalArrayDecl(
-        SgPntrArrRefExp* shared_ref, SgExpression* subscript) {
-    return NULL;
+UpctrBuilder::buildLocalArrayDecl(SgPntrArrRefExp* shared_ref,
+                                  SgExpression* subscript,
+                                  SgScopeStatement* scope) {
+
+    string newname = "__upctr_local_" + getArrayName(shared_ref);
+    SgExpression* len = buildIntVal(16); // TODO determine array size
+    SgType* newtype = stripSharedQualifier( getArrayType(shared_ref, len) );
+
+    return buildVariableDeclaration(newname, newtype, NULL, scope);
 }
 
 /*
@@ -18,9 +48,16 @@ UpctrBuilder::buildLocalArrayDecl(
  *     __upctr_local_A[k]
  */
 SgExpression*
-UpctrBuilder::buildLocalReference(
-        SgVariableDeclaration* local_array_decl, SgExpression* subscript) {
-    return NULL;
+UpctrBuilder::buildLocalReference(SgVariableDeclaration* local_array_decl,
+                                  SgExpression* subscript_exp,
+                                  SgScopeStatement* scope) {
+    return subscript_exp;
+#if 0
+    return buildVarRefExp( local_array_decl );
+    return buildPntrArrRefExp(
+                buildVarRefExp( local_array_decl ),
+                subscript_exp);
+#endif
 }
 
 /*
