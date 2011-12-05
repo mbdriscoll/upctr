@@ -1,7 +1,13 @@
+#include "rose.h"
+#include "sageInterface.h"
+
 #include "builder.h"
 
-SgExpression*
-UpctrBuilder::buildLocalArray(
+using namespace std;
+using namespace SageBuilder;
+
+SgVariableDeclaration*
+UpctrBuilder::buildLocalArrayDecl(
         SgPntrArrRefExp* shared_ref, SgExpression* subscript) {
     return NULL;
 }
@@ -13,7 +19,7 @@ UpctrBuilder::buildLocalArray(
  */
 SgExpression*
 UpctrBuilder::buildLocalReference(
-        SgPntrArrRefExp* local_array, SgExpression* subscript) {
+        SgVariableDeclaration* local_array_decl, SgExpression* subscript) {
     return NULL;
 }
 
@@ -24,10 +30,10 @@ UpctrBuilder::buildLocalReference(
  */
 SgStatement*
 UpctrBuilder::buildFetch(
-        SgPntrArrRefExp* local_array,
+        SgVariableDeclaration* local_array_decl,
         SgPntrArrRefExp* shared_ref,
         SgExpression* subscript) {
-    return NULL;
+    return buildExprStatement( buildStringVal("this_is_the_fetch") );
 }
 
 /*
@@ -38,7 +44,7 @@ UpctrBuilder::buildFetch(
 SgStatement*
 UpctrBuilder::buildStore(
         SgPntrArrRefExp* shared_ref,
-        SgPntrArrRefExp* local_array,
+        SgVariableDeclaration* local_array_decl,
         SgExpression* subscript) {
-    return NULL;
+    return buildExprStatement( buildStringVal("this_is_the_store") );
 }

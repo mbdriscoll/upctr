@@ -9,7 +9,7 @@ namespace UpctrBuilder {
      * Build AST to declare local array. Will look something like:
      *     double* __upctr_local_A[N];
      */
-    SgExpression* buildLocalArray(
+    SgVariableDeclaration* buildLocalArrayDecl(
             SgPntrArrRefExp* shared_ref, SgExpression* subscript);
 
     /*
@@ -18,7 +18,7 @@ namespace UpctrBuilder {
      *     __upctr_local_A[k]
      */
     SgExpression* buildLocalReference(
-            SgExpression* local_array, SgExpression* subscript);
+            SgVariableDeclaration* local_array_decl, SgExpression* subscript);
 
     /*
      * Build AST to execute fetch of shared_array into local_array. Will
@@ -26,7 +26,7 @@ namespace UpctrBuilder {
      *     bupc_memget_strided(local_array, ..., shared_array, ...);
      */
     SgStatement* buildFetch(
-            SgPntrArrRefExp* local_array,
+            SgVariableDeclaration* local_array,
             SgPntrArrRefExp* shared_ref,
             SgExpression* subscript);
 
@@ -37,7 +37,7 @@ namespace UpctrBuilder {
      */
     SgStatement* buildStore(
             SgPntrArrRefExp* shared_ref,
-            SgPntrArrRefExp* local_array,
+            SgVariableDeclaration* local_array,
             SgExpression* subscript);
 
 } /* end namespace UpcBuilder */

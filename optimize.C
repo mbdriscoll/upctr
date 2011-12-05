@@ -31,7 +31,7 @@ int getLoopLevel(SgExpression* exp) {
 }
 
 /**
- * True if this reference is a write.
+ * TODO True if this reference is a write.
  */
 bool isWrite(SgPntrArrRefExp* reference) {
     cerr << "Warning: isWrite() is unimplemented." << endl;
@@ -39,7 +39,7 @@ bool isWrite(SgPntrArrRefExp* reference) {
 }
 
 /**
- * True if this reference is a read.
+ * TODO True if this reference is a read.
  */
 bool isRead(SgPntrArrRefExp* reference) {
     cerr << "Warning: isRead() is unimplemented." << endl;
@@ -59,17 +59,19 @@ void localize(SgPntrArrRefExp* shared_ref,
             target->get_increment()->unparseToString().c_str());
 
     /* create a new local array __upctr_local_NAME */
-    SgExpression* local_array = UpctrBuilder::buildLocalArray(shared_ref, subscript);
-    SgExpression* local_ref = UpctrBuiler::buildLocalReference(local_array, subscript);
+    SgVariableDeclaration* local_array_decl =
+        UpctrBuilder::buildLocalArrayDecl(shared_ref, subscript);
+    SgExpression* local_ref =
+        UpctrBuilder::buildLocalReference(local_array_decl, subscript);
 
     /* replace subscript with a reference to the local array */
-    SageInterface::replaceStatement(shared_ref, local_ref);
+    SageInterface::replaceExpression(shared_ref, local_ref);
 
     /* if subscript is a read, insert bupc_memget_strided call
      * before target via SageInterface::prependStatement */
     if ( isRead(shared_ref) ) {
         SgStatement* fetch_stmt =
-            UpctrBuilder::buildFetch(local_array, shared_ref, subscript);
+            UpctrBuilder::buildFetch(local_array_decl, shared_ref, subscript);
         SageInterface::prependStatement(fetch_stmt, target->get_scope());
     }
 
@@ -77,7 +79,7 @@ void localize(SgPntrArrRefExp* shared_ref,
      * after target via SageInterface::appendStatement */
     if ( isWrite(shared_ref) ) {
         SgStatement* store_stmt =
-            UpctrBuilder::buildStore(shared_ref, local_array, subscript);
+            UpctrBuilder::buildStore(shared_ref, local_array_decl, subscript);
         SageInterface::appendStatement(store_stmt, target->get_scope());
     }
 }
