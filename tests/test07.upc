@@ -1,7 +1,7 @@
 #include <upc.h>
 
-#define N 500
-#define T 500
+#define N 100
+#define T 10000
 
 shared [N] double A[N][N];
 
