@@ -8,17 +8,18 @@
  */
 
 /* (N x N) * (N x N) -> (N x N) */
-#define N 1000
+#define N 2000
 
+shared [N] double A[N][N];
+shared [1] double B[N][N];
+shared [N] double C[N][N];
 
 /*
  * Double precision general matrix multiply.
  * Matrix dimensions must agree.
  * Sets C = AB.
  */
-void dgemm(shared [N] double ** C,
-           shared [N] double ** A,
-           shared [1] double ** B) {
+void dgemm() {
     int i, j, k;
     upc_forall (i = 0; i < N; i++; &C[i][0]) {
         for (j = 0; j < N; j++) {
