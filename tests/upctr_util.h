@@ -89,7 +89,7 @@ shared double* upctr_init_vec(int n, upctr_init_t init_t) {
 
     return M;
 }
-#define	BLOCK_SIZE	1000
+
 void upctr_init_vec_static(shared [BLOCK_SIZE] double *a, int n, upctr_init_t init_t){
 	int i;
 	upc_forall(i=0;i<n;i++;&a[i]){

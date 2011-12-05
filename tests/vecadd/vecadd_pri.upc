@@ -1,5 +1,6 @@
+#define	BLOCK_SIZE	1000
+#define	N			BLOCK_SIZE*THREADS
 #include "../upctr_util.h"
-#define	N	BLOCK_SIZE*THREADS
 
 shared [BLOCK_SIZE] double a[N];
 shared [BLOCK_SIZE] double b[N];
@@ -17,9 +18,9 @@ int main(){
 
 	upctr_timer("init");
 	base = MYTHREAD*BLOCK_SIZE;
-	a_priv = &a[base];
-	b_priv = &b[base];
-	c_priv = &c[base];
+	a_priv = (double *) &a[base];
+	b_priv = (double *) &b[base];
+	c_priv = (double *) &c[base];
 	upc_forall(i=0;i<N;i++; &a[i]){
 		*c_priv = *a_priv + *b_priv;
 		a_priv++; b_priv++; c_priv++;
