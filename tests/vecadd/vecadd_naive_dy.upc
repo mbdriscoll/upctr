@@ -1,5 +1,6 @@
+#define	BLOCK_SIZE	1000
+#define	N			BLOCK_SIZE*THREADS
 #include "../upctr_util.h"
-#define	N	BLOCK_SIZE*THREADS
 
 int main(){
 	int i;
