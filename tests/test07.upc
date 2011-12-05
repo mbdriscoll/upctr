@@ -25,8 +25,12 @@ int main() {
                 double e = A[i][j+1];
                 double w = A[i][j-1];
                 double c = A[i][j];
+                double ne = A[i+1][j+1];
+                double nw = A[i+1][j-1];
+                double se = A[i-1][j+1];
+                double sw = A[i-1][j-1];
                 upc_barrier;
-                A[i][j] = (n+s+e+w+c) / 5.0;
+                A[i][j] = (n+s+e+w+c+nw+ne+sw+se) / 9.0;
             }
         }
         upc_barrier;
