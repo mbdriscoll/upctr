@@ -12,7 +12,7 @@
  */
 
 /* (N x N) * (N x N) -> (N x N) */
-#define N 500
+#define N 4
 
 #include <upctr_util.h>
 
@@ -27,31 +27,23 @@ void dgemm(shared [N] double ** C,
     int i, j, k;
 
     upc_forall (i = 0; i < N; i++; &C[i][0]) {
+
+        /* memget C */
+        double C_local[N];
+        bupc_memget_fstrided(
+            &C_local, sizeof(double), sizeof(double), N,
+            C[i], sizeof(double), sizeof(double), N
+        );
+
+#if 0
         /* memget A */
         double A_local[N];
-#if 0
-        size_t dststrides[] = {sizeof(double)};
-        size_t srcstrides[] = {sizeof(double)};
-        size_t count[] = {sizeof(double), N};
-        size_t stridelevels = 1;
-        bupc_memget_strided(A_local, dststrides,
-                &A[i][0], srcstrides,
-                count, stridelevels);
-#else
         bupc_memget_fstrided(
-            A_local,         // void *dstaddr,
-            sizeof(double),  // size_t dstchunklen,
-            sizeof(double),  // size_t dstchunkstride,
-            N,               // size_t dstchunkcount,
-            *A,              // shared void *srcaddr,
-            sizeof(double),  // size_t srcchunklen,
-            sizeof(double),  // size_t srcchunkstride,
-            N                // size_t srcchunkcount
+            &A_local, sizeof(double), sizeof(double), N,
+            &A[i], sizeof(double), sizeof(double), N
         );
-#endif
 
         for (j = 0; j < N; j++) {
-
 
             /* memget B */
             double B_local[N];
@@ -64,12 +56,19 @@ void dgemm(shared [N] double ** C,
                                 countB, stridelevelsB);
 
             for (k = 0; k < N; k++) {
-                C[i][j] = C[i][j] + A_local[k]* B_local[k];
+                C_local[k] = C_local[k] + A_local[k]* B_local[k];
             }
         }
+#endif
+
+        /* memput C */
+        bupc_memput_fstrided(
+            C[i], sizeof(double), sizeof(double), N,
+            &C_local, sizeof(double), sizeof(double), N
+        );
     }
 }
-    
+
 /*
  * Main. Initializes matrices and runs dgemm.
  */
@@ -81,7 +80,7 @@ int main(int argc, char* argv[]) {
     upctr_init((shared double **) A, UPCTR_INIT_INDEX);
     upctr_init((shared double **) B, UPCTR_INIT_IDENT);
     upctr_init((shared double **) C, UPCTR_INIT_ZERO);
- 
+
     upc_barrier;
 
     START_TIMER;
