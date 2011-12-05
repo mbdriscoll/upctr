@@ -52,11 +52,6 @@ void localize(SgPntrArrRefExp* shared_ref,
               SgExpression* subscript,
               SgForStatement* target) {
 
-    printf("localizing %s from %s around %s loop\n",
-            subscript->unparseToString().c_str(),
-            shared_ref->unparseToString().c_str(),
-            target->get_increment()->unparseToString().c_str());
-
     bool written = isWrite(shared_ref);
     bool read = isRead(shared_ref);
 
@@ -78,8 +73,9 @@ void localize(SgPntrArrRefExp* shared_ref,
     if (written)
         store_stmt = UpctrBuilder::buildStore(shared_ref, local_array_decl, subscript);
 
-    replaceExpression(shared_ref, local_ref);
+    /* actually transform the AST */
     prependStatement(local_array_decl, target->get_scope());
+    replaceExpression(shared_ref, local_ref, true);
     if (read) insertStatementAfter(local_array_decl, fetch_stmt);
     if (written) appendStatement(store_stmt, target->get_scope());
 }

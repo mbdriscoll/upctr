@@ -51,13 +51,9 @@ SgExpression*
 UpctrBuilder::buildLocalReference(SgVariableDeclaration* local_array_decl,
                                   SgExpression* subscript_exp,
                                   SgScopeStatement* scope) {
-    return subscript_exp;
-#if 0
-    return buildVarRefExp( local_array_decl );
     return buildPntrArrRefExp(
                 buildVarRefExp( local_array_decl ),
                 subscript_exp);
-#endif
 }
 
 /*
