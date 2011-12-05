@@ -29,6 +29,7 @@ void dgemm(shared [N] double ** C,
     upc_forall (i = 0; i < N; i++; &C[i][0]) {
         /* memget A */
         double A_local[N];
+#if 0
         size_t dststrides[] = {sizeof(double)};
         size_t srcstrides[] = {sizeof(double)};
         size_t count[] = {sizeof(double), N};
@@ -36,6 +37,18 @@ void dgemm(shared [N] double ** C,
         bupc_memget_strided(A_local, dststrides,
                 &A[i][0], srcstrides,
                 count, stridelevels);
+#else
+        bupc_memget_fstrided(
+            A_local,         // void *dstaddr,
+            sizeof(double),  // size_t dstchunklen,
+            sizeof(double),  // size_t dstchunkstride,
+            N,               // size_t dstchunkcount,
+            *A,              // shared void *srcaddr,
+            sizeof(double),  // size_t srcchunklen,
+            sizeof(double),  // size_t srcchunkstride,
+            N                // size_t srcchunkcount
+        );
+#endif
 
         for (j = 0; j < N; j++) {
 

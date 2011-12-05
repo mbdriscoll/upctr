@@ -30,7 +30,8 @@ namespace UpctrBuilder {
     SgStatement* buildFetch(
             SgVariableDeclaration* local_array,
             SgPntrArrRefExp* shared_ref,
-            SgExpression* subscript);
+            SgExpression* subscript,
+            SgScopeStatement* scope);
 
     /*
      * Build AST to execute store of local_array into shared ref. Will

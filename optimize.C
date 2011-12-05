@@ -35,7 +35,7 @@ int getLoopLevel(SgExpression* exp) {
  */
 bool isWrite(SgPntrArrRefExp* reference) {
     cerr << "Warning: isWrite() is unimplemented." << endl;
-    return true;
+    return false;
 }
 
 /**
@@ -65,8 +65,8 @@ void localize(SgPntrArrRefExp* shared_ref,
 
     /* if subscript is a read, build bupc_memget_strided call */
     SgStatement* fetch_stmt;
-    if (read)
-        fetch_stmt = UpctrBuilder::buildFetch(local_array_decl, shared_ref, subscript);
+    if (read) fetch_stmt = UpctrBuilder::buildFetch(
+            local_array_decl, shared_ref, subscript, target->get_scope());
 
     /* if subscript is a write, build bupc_memput_strided call */
     SgStatement* store_stmt;
