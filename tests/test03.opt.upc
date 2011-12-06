@@ -29,18 +29,7 @@ void dgemm() {
 
     int i, j, k;
     upc_forall (i = 0; i < N; i++; &C[i][0]) {
-
-        /* memset C */
-        double C_local[N];
-        memset(&C_local, 0, N*sizeof(double));
-
-        /* memget A */
-        double A_local[N];
-        bupc_memget_fstrided( &A_local[0], sizeof(double), sizeof(double), N,
-                              &A[i], sizeof(double), sizeof(double), N);
-
         for (j = 0; j < N; j++) {
-
             /* memget B */
             double B_local[N];
             bupc_memget_fstrided( &B_local, sizeof(double), sizeof(double), N,
@@ -49,10 +38,6 @@ void dgemm() {
             for (k = 0; k < N; k++)
                 C_local[k] = C_local[k] + A_local[k]* B_local[k];
         }
-
-        /* memput C */
-        bupc_memput_fstrided( &C[i], sizeof(double), sizeof(double), N,
-                              &C_local, sizeof(double), sizeof(double), N);
     }
 }
 
