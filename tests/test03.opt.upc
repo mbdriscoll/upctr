@@ -12,7 +12,7 @@
  */
 
 /* (N x N) * (N x N) -> (N x N) */
-#define N 2000
+#define N 16
 
 #include <upctr_util.h>
 
@@ -33,10 +33,10 @@ void dgemm() {
             /* memget B */
             double B_local[N];
             bupc_memget_fstrided( &B_local, sizeof(double), sizeof(double), N,
-                                  &B[0][j], sizeof(double), sizeof(double), N);
+                                  &B[0][j], sizeof(double), N*sizeof(double), N);
 
             for (k = 0; k < N; k++)
-                C_local[k] = C_local[k] + A_local[k]* B_local[k];
+                C[i][j] += A[i][k]* B_local[k];
         }
     }
 }
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
     dgemm();
     END_TIMER;
 
-#if 0
+#if 1
     if (MYTHREAD == 0) {
         upctr_print_mat("A", (shared double *) &A);
         upctr_print_mat("B", (shared double *) &B);
