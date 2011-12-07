@@ -1,7 +1,7 @@
 #include <upc.h>
 
-#define N 100
-#define T 10000
+#define N 64
+#define T 100000
 
 shared [N] double A[N][N];
 
@@ -44,6 +44,7 @@ int main() {
         for (i = 0; i < N; i++) {
             for (j = 0; j < N; j++) {
                 printf(" %f,", A[i][j]);
+                //printf(" %d,", upc_threadof(&A[i][j]));
             }
             printf("\n");
         }
