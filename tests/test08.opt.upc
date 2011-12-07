@@ -1,7 +1,7 @@
 #include <upc.h>
 
-#define N 16
-#define T 1000000
+#define N 64
+#define T 10
 
 // stencil radius. #elems = (2S+1)^2
 #define S 3
