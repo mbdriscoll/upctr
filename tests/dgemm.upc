@@ -24,7 +24,7 @@ void dgemm() {
     upc_forall (i = 0; i < N; i++; &C[i][0]) {
         for (j = 0; j < N; j++) {
             for (k = 0; k < N; k++) {
-                C[i][j] += A[i][k] + B[k][j];
+                C[i][j] += A[i][k] * B[k][j];
             }
         }
     }
