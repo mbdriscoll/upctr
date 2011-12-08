@@ -22,14 +22,16 @@ int main() {
 
     int t;
     double tmp;
+    double stencil[2*S+1][2*S+1];
     for (t = 0; t < T; t++) {
 
         upc_forall (i = S; i < N-S; i++; &A[i][0]) {
             for (j = S; j < N-S; j++) {
                 B[i][j] = 0.0;
-                for (di = -S; di <= S; di++)
+                for (di = -S; di <= S; di++) {
                     for (dj = -S; dj <= S; dj++)
-                        B[i][j] += (&(&A[i])[j])[di][dj];
+                        B[i][j] += A[i+di][j+dj];
+                }
             }
         }
 
